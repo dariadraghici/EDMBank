@@ -13,9 +13,25 @@ class EDMBankApp:
         # initial dimensions for mobile: FORMAT 9 X 16 - RESPONSIVE
         screen_width = main.winfo_screenwidth()
         screen_height = main.winfo_screenheight()
-        initial_width = min(990, screen_width)
-        initial_height = min(1760, screen_height)
-        self.main.geometry(f"{initial_width}x{initial_height}")
+        
+        # START WITH SMALLER SIZE THAT FITS ON SCREEN BUT KEEP 9:16 ASPECT RATIO
+        max_width = min(990, screen_width )  # Ensure it fits with margin
+        max_height = min(1760, screen_height - 100)  # Ensure it fits with margin
+        
+        # Calculate proportional size maintaining 9:16 aspect ratio
+        if max_width / max_height > 9/16:
+            # Height is limiting factor
+            initial_width = int(max_height * 9/16)
+            initial_height = max_height
+        else:
+            # Width is limiting factor
+            initial_width = max_width
+            initial_height = int(max_width * 16/9)
+            
+        # Center the window
+        x = (screen_width - initial_width) // 2
+        y = (screen_height - initial_height) // 2
+        self.main.geometry(f"{initial_width}x{initial_height}+{x}+{y}")
         self.main.minsize(300, 500)  # minimum reasonable size
         # allow maximizing
         self.main.configure(bg="#354f52")
@@ -67,8 +83,8 @@ class EDMBankApp:
             if isinstance(window, tk.Toplevel):
                 window.geometry(f"+{x}+{y}")
                 break
-    
-    # function to generate a random card number (16 random characters starting with 4 or 5)
+
+    # function to generate a random card number (16 random characters)
     def generate_card_number(self):
         # generate 16 random digits
         digits = ''.join([str(random.randint(0, 9)) for _ in range(16)])
@@ -112,12 +128,12 @@ class EDMBankApp:
         
         for text, command in buttons_data:
             btn = tk.Button(self.buttons_frame, text=text, font=('Arial', 16, 'bold'), 
-                           bg='white', fg='#333333', relief='flat', borderwidth=2,
+                           bg='#52796f', fg='white', relief='flat', borderwidth=2,
                            height=3, command=command)
             btn.pack(fill='x', padx=10, pady=6)
         
         # KEEP ORIGINAL CARD DIMENSIONS BUT MAKE RESPONSIVE
-        self.card_frame.configure(height=240, width=360)
+        self.card_frame.configure(height=360, width=500)
         self.card_frame.grid_propagate(False)
         self.update_card_display()
     
@@ -147,12 +163,12 @@ class EDMBankApp:
         # create buttons in a grid
         for text, command, row, col in buttons_data:
             btn = tk.Button(self.buttons_frame, text=text, font=('Arial', 11), 
-                           bg='#354f52', fg="#354f52", relief='flat',
+                           bg='#354f52', fg="white", relief='flat',
                            height=2, command=command)
             btn.grid(row=row, column=col, padx=6, pady=6, sticky='nsew')
         
         # KEEP ORIGINAL CARD DIMENSIONS BUT MAKE RESPONSIVE
-        self.card_frame.configure(height=160, width=300)
+        self.card_frame.configure(height=240, width=400)
         self.card_frame.grid_propagate(False)
         self.update_card_display()
     
@@ -211,18 +227,18 @@ class EDMBankApp:
         self.create_card(main_frame)
 
         # sold button - VIEW BALANCE
-        sold_btn = tk.Button(main_frame, text="VIEW BALANCE", font=('Open Sans', 20, 'bold'),
+        sold_btn = tk.Button(main_frame, text="VIEW BALANCE", font=('Open Sans', 10, 'bold'),
                             bg='#52796f', fg='#ffffff', relief='flat',
                             height=3, command=self.toggle_sold)
         sold_btn.grid(row=1, column=0, sticky='ew', pady=15)
 
         # sold amount label
         self.sold_label = tk.Label(main_frame, text=self.sold_amount,
-                                  font=('Arial', 20, 'bold'), bg='#f0f0f0', fg='#2f3e46')
+                                  font=('Arial', 20, 'bold'), bg='#cad2c5', fg='#2f3e46')
         self.sold_label.grid(row=2, column=0, pady=10)
         self.sold_label.grid_remove()
         
-        self.buttons_frame = tk.Frame(main_frame, bg='#f0f0f0')
+        self.buttons_frame = tk.Frame(main_frame, bg='#cad2c5')
         self.buttons_frame.grid(row=3, column=0, sticky='nsew', pady=20)
         
         self.switch_to_mobile_layout()
@@ -351,7 +367,7 @@ class EDMBankApp:
         login_window_width = min(300, self.main.winfo_width() - 100)
         login_window_height = min(200, self.main.winfo_height() - 100)
         login_window.geometry(f"{login_window_width}x{login_window_height}")
-        login_window.configure(bg='#f0f0f0')
+        login_window.configure(bg='#b0c4b1')
         login_window.transient(self.main)  # Make the window dependent on the parent
         login_window.grab_set()  # Modal - blocks interaction with parent
 
@@ -364,8 +380,8 @@ class EDMBankApp:
         # no resizing allowed
         login_window.resizable(False, False)
 
-        tk.Label(login_window, text="Username:", font=('Arial', 12),
-                bg='#f0f0f0').pack(pady=10)
+        tk.Label(login_window, text="Username:", font=('URW Gothic', 20),
+                bg='#b0c4b1').pack(pady=10)
         
         username_entry = tk.Entry(login_window, font=('Arial', 12))
         username_entry.pack(pady=5, padx=20, fill='x')
@@ -391,7 +407,7 @@ class EDMBankApp:
         username_entry.bind('<Return>', on_enter)
         
         login_btn = tk.Button(login_window, text="LOGIN", font=('Arial', 12, 'bold'),
-                             bg='#6a0dad', fg='white', command=do_login)
+                             bg='#2f3e46', fg='white', command=do_login)
         login_btn.pack(pady=20)
 
         # Bind to close on Escape key
