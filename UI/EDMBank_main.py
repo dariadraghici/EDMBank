@@ -5,16 +5,20 @@ import random
 from unicodedata import digit
 
 class EDMBankApp:
+    # self = this (Java refference :)) )
     def __init__(self, main):
         self.main = main # a root window
         self.main.title("EDM Bank")
 
-        # initial dimensions for mobile: FORMAT 9 X 16
-        self.main.geometry("990x1760")
-        self.main.minsize(990, 1760)
-
+        # initial dimensions for mobile: FORMAT 9 X 16 - RESPONSIVE
+        screen_width = main.winfo_screenwidth()
+        screen_height = main.winfo_screenheight()
+        initial_width = min(990, screen_width)
+        initial_height = min(1760, screen_height)
+        self.main.geometry(f"{initial_width}x{initial_height}")
+        self.main.minsize(300, 500)  # minimum reasonable size
         # allow maximizing
-        self.main.configure(bg="#1e1e1e")
+        self.main.configure(bg="#354f52")
 
         # variables for user and card
         self.sold_visible = False
@@ -28,7 +32,7 @@ class EDMBankApp:
 
         # main frame that expands (border padding)
         self.main_container = tk.Frame(self.main, bg="#354f52")
-        self.main_container.pack(fill='both', expand=True)
+        self.main_container.pack(fill='both', expand=True, padx=10, pady=10)  # ADDED PADDING
 
         # configure grid for scaling (with weight = 1 the content expands, if not it stays fixed)
         self.main_container.grid_rowconfigure(1, weight=1)
@@ -42,6 +46,8 @@ class EDMBankApp:
         # bind for resizing
         self.main.bind('<Configure>', self.on_resize)
     
+    # --------------------------------------------------------------------------
+
     def show_message(self, title, message, message_type="info"):
         # calculates center position of the main window for centering the messagebox
         self.main.update_idletasks()
@@ -87,9 +93,7 @@ class EDMBankApp:
                 self.switch_to_mobile_layout()
                 self.is_large_screen = False
     
-
     # --------------------------------------------------------------------------
-
 
     # switch layout to desktop (large screen)
     def switch_to_desktop_layout(self):
@@ -112,10 +116,13 @@ class EDMBankApp:
                            height=3, command=command)
             btn.pack(fill='x', padx=10, pady=6)
         
+        # KEEP ORIGINAL CARD DIMENSIONS BUT MAKE RESPONSIVE
         self.card_frame.configure(height=240, width=360)
         self.card_frame.grid_propagate(False)
         self.update_card_display()
     
+    # --------------------------------------------------------------------------
+
     def switch_to_mobile_layout(self):
         for widget in self.buttons_frame.winfo_children():
             widget.destroy()
@@ -144,10 +151,13 @@ class EDMBankApp:
                            height=2, command=command)
             btn.grid(row=row, column=col, padx=6, pady=6, sticky='nsew')
         
+        # KEEP ORIGINAL CARD DIMENSIONS BUT MAKE RESPONSIVE
         self.card_frame.configure(height=160, width=300)
         self.card_frame.grid_propagate(False)
         self.update_card_display()
     
+# --------------------------------------------------------------------------
+
     def update_card_display(self):
         display_number = self.format_card_number(self.card_number, self.card_data_visible)
         self.card_number_label.configure(text=display_number)
@@ -185,7 +195,9 @@ class EDMBankApp:
                              bg="#354f52", fg='white', relief='flat', padx=25,
                              height=2, command=self.login)
         login_btn.grid(row=0, column=2, sticky='e', padx=(10, 0))
-    
+
+    # --------------------------------------------------------------------------
+
     def create_main_content(self):
         # background
         main_frame = tk.Frame(self.main_container, bg="#cad2c5")
@@ -221,7 +233,8 @@ class EDMBankApp:
         #borders of the card
         
         # TODO: replace with image later
-        self.card_frame = tk.Frame(parent, bg="#2f3e46", height=200, width=400)
+        # KEEP ORIGINAL CARD DIMENSIONS
+        self.card_frame = tk.Frame(parent, bg="#2f3e46", height=160, width=300)
         self.card_frame.grid(row=0, column=0, sticky='n', pady=20)
         self.card_frame.grid_propagate(False)
 
@@ -283,15 +296,17 @@ class EDMBankApp:
             btn_frame = tk.Frame(nav_frame, bg="#354f52")
             btn_frame.pack(side='left', expand=True, fill='both')
             
-            # icon and text labels
-            icon_label = tk.Label(btn_frame, text=icon, font=('Arial', 20), 
-                                 bg="#fa9c9c", fg="#323A87", cursor='hand2')
+            # icon and text labels down
+            icon_label = tk.Label(btn_frame, text=icon, font=('FreeMono', 25, 'bold'), 
+                                 bg="#84a98c", fg="#323A87", cursor='hand2')
             icon_label.pack(pady=(10, 2))
-            
-            text_label = tk.Label(btn_frame, text=text, font=('Arial', 9, 'bold'), 
+
+            # the text near icons down
+            text_label = tk.Label(btn_frame, text=text, font=('FreeMono', 9, 'bold'),
                                  bg="#354f52", fg='#ffffff', cursor='hand2')
             text_label.pack(pady=(0, 10))
             
+            # bind click events
             for widget in [btn_frame, icon_label, text_label]:
                 widget.bind("<Button-1>", lambda e, cmd=command: cmd())
     
@@ -308,6 +323,7 @@ class EDMBankApp:
     # --------------------------------------------------------------------------
 
     def toggle_card_data(self):
+        # show card details in messagebox
         if not self.card_data_visible:
             self.card_data_visible = True
             self.update_card_display()
@@ -319,6 +335,7 @@ class EDMBankApp:
                             f"CVV: {self.card_cvv}\n\n"
                             "⚠️ Keep this information safe!",
                             "info")
+        # hide card details
         else:
             self.card_data_visible = False
             self.update_card_display()
@@ -330,16 +347,19 @@ class EDMBankApp:
         """Login window centered on application"""
         login_window = tk.Toplevel(self.main)
         login_window.title("Login EDM Bank")
-        login_window.geometry("300x200")
+        # made login window responsive
+        login_window_width = min(300, self.main.winfo_width() - 100)
+        login_window_height = min(200, self.main.winfo_height() - 100)
+        login_window.geometry(f"{login_window_width}x{login_window_height}")
         login_window.configure(bg='#f0f0f0')
         login_window.transient(self.main)  # Make the window dependent on the parent
         login_window.grab_set()  # Modal - blocks interaction with parent
 
-        # Center the login window on the application
+        # center the login window on the application
         self.main.update_idletasks()
-        x = self.main.winfo_x() + self.main.winfo_width() // 2 - 150
-        y = self.main.winfo_y() + self.main.winfo_height() // 2 - 100
-        login_window.geometry(f"300x200+{x}+{y}")
+        x = self.main.winfo_x() + self.main.winfo_width() // 2 - login_window_width // 2
+        y = self.main.winfo_y() + self.main.winfo_height() // 2 - login_window_height // 2
+        login_window.geometry(f"+{x}+{y}")
         
         # no resizing allowed
         login_window.resizable(False, False)
@@ -373,8 +393,8 @@ class EDMBankApp:
         login_btn = tk.Button(login_window, text="LOGIN", font=('Arial', 12, 'bold'),
                              bg='#6a0dad', fg='white', command=do_login)
         login_btn.pack(pady=20)
-        
-        # Bind pentru a în chide fereastra cu ESC
+
+        # Bind to close on Escape key
         login_window.bind('<Escape>', lambda e: login_window.destroy())
     
     def transfer(self):
@@ -414,4 +434,3 @@ if __name__ == "__main__":
     main = tk.Tk()
     app = EDMBankApp(main)
     main.mainloop()
-
