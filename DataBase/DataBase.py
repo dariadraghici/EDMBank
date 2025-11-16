@@ -7,21 +7,20 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 from faker import Faker
 from datetime import datetime
+from user_management.user import User
 
 class Database:
     def __init__(self):
-        self.initializareBazaDate()
+        self.initDadabase()
 
-    def initializareBazaDate(self):
+    def initDadabase(self):
         key_path = os.path.join(os.path.dirname(__file__),"edmbank-7fd19-firebase-adminsdk-fbsvc-97c017e5cd.json")
         if not firebase_admin._apps:
             cred = credentials.Certificate(key_path)
             firebase_admin.initialize_app(cred)
         self.db = firestore.client()
 
-    def adaugaUtilizator(self, username, Password, email, sum):
-        CardDigit = random.randrange(10**15,10**16-1)
-        CVV = random.randrange(10**2,10**3)
+    def addUser(self, user : User):
         current_year = datetime.now().year
         year_first = current_year + 1
         year_last = current_year + 20
@@ -31,6 +30,13 @@ class Database:
             expiry_date = "0" + str(rand_month) + "/" + str(rand_year%100) 
         else:
             expiry_date = str(rand_month) + "/" + str(rand_year%100)
+        
+        Password = user.credentials.password
+        username = user.credentials.username
+        CardDigit = user.card.number
+        CVV = user.card.cvv
+        email = user.credentials.email
+    
         Password_bytes = str(Password).encode()
         salt = bcrypt.gensalt()
         Password = bcrypt.hashpw(Password_bytes, salt)
@@ -60,14 +66,14 @@ class Database:
         else:
             return False  
 
-    def adaugaIstoric(self, username, amount, receiver):
+    def addHistory(self, username, amount, receiver):
         doc_ref = self.db.collection("Users").document(username)
         doc = doc_ref.get()
 
         entry = "You have sent " + str(amount) + " to " + receiver+ "."
         doc_ref.update({"Istoric" : firestore.ArrayUnion([entry])})
 
-    def extrageDate(self, username, date):
+    def getData(self, username, date):
         doc_ref = self.db.collection("Users").document(username)
         doc = doc_ref.get()
         #date este o valoare care indica
@@ -89,12 +95,12 @@ class Database:
             return None
         
 
-    def stergeUtilizator(self, username):
+    def deleteUser(self, username):
         doc_ref = self.db.collection("Users").document(username)
         doc = doc_ref.get()
         doc_ref.delete()
 
-    def modifica(self, username, varianta, modificator):
+    def modifyUser(self, username, varianta, modificator):
         doc_ref = self.db.collection("Users").document(username)
         doc = doc_ref.get()
         if varianta == 1: # vrea sa modifice username
