@@ -2,16 +2,16 @@ import random
 
 
 class Card :
-    def __init__(self):
-        self.number, self.cvv = Card.generateCardNumber()
+    def __init__(self, number, cvv):
+        self.number = number
+        self.cvv = cvv
 
     
     @staticmethod
     def generateCardNumber():
         """
-        Generate a random card for user. Need to 
-        be checked externally if the card doesn't
-        exist yet in database.
+        Generates a random card number for the user.
+        It must be validated externally to ensure the card does not already exist in the database.
         """
         number = random.randrange(10**15,10**16-1)
         cvv = random.randrange(10**2,10**3)
