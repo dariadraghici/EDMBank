@@ -1,11 +1,19 @@
+import sys
+import os
+
+# Add the project's root directory to the Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import tkinter as tk
 from EDMBank_login import EDMBankLogin
 from EDMBank_main import EDMBankApp
+from services.bank_service import BankService
+from DataBase.DataBase import Database
 
-def run_login_app(root):
+def run_login_app(root, bank_service: BankService):
     """Starts the Login application on the given root."""
     # Passes start_main_app as the success callback
-    EDMBankLogin(root, start_main_app)
+    EDMBankLogin(root, start_main_app, bank_service)
 
 def restart_app(current_root):
     """Destroys the current app root and restarts the login application."""
@@ -27,7 +35,7 @@ def restart_app(current_root):
     run_login_app(new_root)
     new_root.mainloop()
 
-def start_main_app(username, login_window):
+def start_main_app(username, login_window, bank_service: BankService):
     # get the position and size of the login window before destroying it
     login_window.update_idletasks()
     x = login_window.winfo_x()
@@ -55,5 +63,8 @@ def start_main_app(username, login_window):
 # entry point
 if __name__ == "__main__":
     root = tk.Tk()
-    run_login_app(root)
+
+    db = Database()
+    bank_service = BankService(db)
+    run_login_app(root, bank_service)
     root.mainloop()

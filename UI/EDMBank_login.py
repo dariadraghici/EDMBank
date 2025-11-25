@@ -2,14 +2,17 @@ import tkinter as tk
 from tkinter import messagebox
 from EDMBank_register import EDMBankRegister
 from EDMBank_keyboard import AlphaNumericKeyboard
+from services.bank_service import BankService
 from PIL import Image, ImageTk
+import os
 
 class EDMBankLogin:
-    def __init__(self, main, on_success_callback):
+    def __init__(self, main, on_success_callback, bank_service: BankService):
         self.main = main
         self.main.title("EDM Bank - Login")
         self.on_success_callback = on_success_callback
-        
+        self.bank_service = bank_service
+
         # initial dimensions for mobile: FORMAT 9 X 16 - RESPONSIVE
         screen_width = main.winfo_screenwidth()
         screen_height = main.winfo_screenheight()
@@ -69,8 +72,12 @@ class EDMBankLogin:
     def create_login_interface(self):
         # EDM Bank title (REPLACED WITH IMAGE LOGO)
         try:
+            # Build a reliable path to the image file
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            image_path = os.path.join(script_dir, "logoo.png")
+            
             # load and resize the image
-            original_image = Image.open('logoo.png')
+            original_image = Image.open(image_path)
             
             # using a fixed width of 400px for the logo
             target_width = 400 
@@ -92,7 +99,7 @@ class EDMBankLogin:
             logo_label = tk.Label(self.main_container, text="EDM Bank", 
                                  font=('Arial', 40, 'bold'), bg="#354f52", fg="white")
             logo_label.pack(pady=(50, 30))
-            messagebox.showwarning("Warning", "Logo image 'edm_bank_logo.gif' not found. Using text fallback.", parent=self.main)
+            messagebox.showwarning("Warning", "Logo image 'logoo.png' not found. Using text fallback.", parent=self.main)
         except Exception as e:
             # fallback for other errors (e.g., PIL not installed)
             logo_label = tk.Label(self.main_container, text="EDM Bank", 
@@ -255,7 +262,7 @@ class EDMBankLogin:
             # if username written
             if username:
                 self.main.withdraw()  # hide login window
-                self.on_success_callback(username, self.main)
+                self.on_success_callback(username, self.main, self.bank_service)
             else:
                 messagebox.showerror("Error", "Please enter a username!", parent=self.main)
                 # If error, re-show username keyboard
@@ -285,4 +292,4 @@ class EDMBankLogin:
         register_root.geometry(f"{width}x{height}+{x}+{y}")
         register_root.minsize(300, 500)
         
-        EDMBankRegister(register_root, self.main, self.on_success_callback)
+        EDMBankRegister(register_root, self.main, self.on_success_callback, self.bank_service)

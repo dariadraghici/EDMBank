@@ -25,6 +25,14 @@ class BankService:
     def add_money(self, user: User, amount: float):
         user.balance += amount
         self.db.modify_user(user)
+
+    def add_user(self, user:User):
+        try:
+            self.db.get_user(user.credentials.username)
+            return False
+        except AccountNotFoundError:
+            self.db.add_user(user)
+            return True
         
 
     
