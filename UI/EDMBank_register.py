@@ -1,13 +1,19 @@
+import random
 import tkinter as tk
 from tkinter import messagebox
 from EDMBank_keyboard import AlphaNumericKeyboard 
+from services.bank_service import BankService
+from user_management.user import User, UserCredentials, PaymentsHistory, Card
 
 class EDMBankRegister:
-    def __init__(self, main, login_window, on_success_callback):
+
+
+    def __init__(self, main, login_window, on_success_callback, bank_service: BankService):
         self.main = main
         self.main.title("EDM Bank - Register")
         self.login_window = login_window 
         self.on_success_callback = on_success_callback # Store the success callback
+        self.bank_service = bank_service
         
         # variables for password management
         self.entered_password = ""
@@ -258,6 +264,14 @@ class EDMBankRegister:
             return
 
         # if all validations pass, proceed with registration
+        credentials = UserCredentials(username, password, email)
+        pay_history = PaymentsHistory()
+        CardDigit = random.randrange(10**15,10**16-1)
+
+        CVV = random.randrange(10**2,10**3)
+        card = Card(CardDigit, CVV)
+        user = User(credentials, 0, pay_history, card)
+        self.bank_service.add_user(user)
         messagebox.showinfo("Registration Successful", 
                             f"Account created for {username} ({email}). Proceeding to main app.", 
                             parent=self.main)
@@ -274,7 +288,7 @@ class EDMBankRegister:
         # destroy registration window 
         self.main.destroy() 
         # call the success callback (which is start_main_app from launcher)
-        self.on_success_callback(username.upper(), self.login_window)
+        self.on_success_callback(username.upper(), self.login_window, self.bank_service)
 
     def back_to_login(self):
         # capture size/position of registration window
