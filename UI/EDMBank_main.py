@@ -513,10 +513,10 @@ class EDMBankApp:
         self.switch_view("contact") 
     
     def transfer(self):
-        self.show_message("Transfer", "Fast transfer to contacts", "info")
+        self.show_transfer_popup()
     
     def transfer_iban(self):
-        self.show_message("Transfer IBAN", "Transfer by entering IBAN", "info")
+        self.show_iban_transfer_popup()
 
     def transaction_history(self):
         self.show_message("Transaction History", "Your transaction history", "info")
@@ -538,6 +538,179 @@ class EDMBankApp:
     
     def show_profile(self):
         self.show_message("Profile", f"User: {self.logged_in_user}", "info")
+
+# --------------------------------------------------------------------------
+    def show_transfer_popup(self):
+        transfer_window = tk.Toplevel(self.main)
+        transfer_window.title("Fast Transfer")
+        transfer_window.configure(bg='#cad2c5')
+        
+        # Calculate position to center the window relative to the main window
+        self.main.update_idletasks()
+        main_width = self.main.winfo_width()
+        main_height = self.main.winfo_height()
+        
+        popup_width = 350
+        popup_height = 250
+        
+        x = self.main.winfo_x() + (main_width // 2) - (popup_width // 2)
+        y = self.main.winfo_y() + (main_height // 2) - (popup_height // 2)
+        
+        transfer_window.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
+        transfer_window.resizable(False, False)
+        transfer_window.grab_set() # Modal window: forces focus on this window
+        
+        # --- Recipient Username Input ---
+        tk.Label(transfer_window, text="Recipient Username:", font=('Tex Gyre Chorus', 20, 'bold'),
+                 bg='#cad2c5', fg='#354f52').pack(pady=(15, 2), padx=10, anchor='w')
+        
+        username_entry = tk.Entry(transfer_window, font=('Arial', 12), relief='flat', bd=2, bg='white')
+        username_entry.pack(pady=(0, 10), padx=20, fill='x')
+        
+        # --- Transfer Sum Input ---
+        tk.Label(transfer_window, text="Sum you want to transfer:", font=('Tex Gyre Chorus', 20, 'bold'),
+                 bg='#cad2c5', fg='#354f52').pack(pady=(5, 2), padx=10, anchor='w')
+        
+        sum_entry = tk.Entry(transfer_window, font=('Arial', 12), relief='flat', bd=2, bg='white')
+        sum_entry.pack(pady=(0, 15), padx=20, fill='x')
+        
+        # --- Button Frame ---
+        button_frame = tk.Frame(transfer_window, bg='#cad2c5')
+        button_frame.pack(pady=10)
+        
+        def attempt_transfer():
+            username = username_entry.get().strip()
+            amount = sum_entry.get().strip()
+            
+            if not username or not amount:
+                self.show_message("Error", "Please fill in both fields.", "warning")
+                return
+
+            try:
+                # Simple validation for amount
+                float(amount.replace(',', '.')) 
+                
+                # Close the pop-up and show confirmation
+                transfer_window.destroy()
+                self.show_message("Success", 
+                                  f"Transferring {amount} RON to {username}...", 
+                                  "info")
+            except ValueError:
+                self.show_message("Error", "Invalid amount entered. Please use numbers.", "error")
+        
+        # SEND Button
+        send_btn = tk.Button(button_frame, text="SEND", font=('Arial', 12, 'bold'),
+                             bg='#52796f', fg='white', command=attempt_transfer, width=10)
+        send_btn.pack(side='left', padx=10)
+        
+        # EXIT Button
+        exit_btn = tk.Button(button_frame, text="EXIT", font=('Arial', 12),
+                             bg='#354f52', fg='white', command=transfer_window.destroy, width=10)
+        exit_btn.pack(side='left', padx=10)
+
+    def is_valid_ro_iban(self, iban):
+        """Checks if the string is a valid format for a Romanian IBAN."""
+        iban = iban.strip().replace(' ', '').upper()
+        # Romanian IBANs are 24 characters long and start with 'RO'
+        return len(iban) == 24 and iban.startswith("RO")
+    
+    # --------------------------------------------------------------------------
+
+    def show_iban_transfer_popup(self):
+        transfer_window = tk.Toplevel(self.main)
+        transfer_window.title("IBAN Transfer")
+        transfer_window.configure(bg='#cad2c5')
+        
+        # Calculate position to center the window relative to the main window
+        self.main.update_idletasks()
+        main_width = self.main.winfo_width()
+        main_height = self.main.winfo_height()
+        
+        popup_width = 380
+        popup_height = 280
+        
+        x = self.main.winfo_x() + (main_width // 2) - (popup_width // 2)
+        y = self.main.winfo_y() + (main_height // 2) - (popup_height // 2)
+        
+        transfer_window.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
+        transfer_window.resizable(False, False)
+        transfer_window.grab_set() # Modal window: forces focus on this window
+        
+        # --- Recipient IBAN Input ---
+        tk.Label(transfer_window, text="Recipient IBAN (RO...):", font=('Arial', 12, 'bold'),
+                 bg='#cad2c5', fg='#354f52').pack(pady=(15, 2), padx=10, anchor='w')
+        
+        iban_entry = tk.Entry(transfer_window, font=('Arial', 12), relief='flat', bd=2, bg='white')
+        iban_entry.pack(pady=(0, 10), padx=20, fill='x')
+        
+        # --- Transfer Sum Input ---
+        tk.Label(transfer_window, text="Sum you want to transfer:", font=('Arial', 12, 'bold'),
+                 bg='#cad2c5', fg='#354f52').pack(pady=(5, 2), padx=10, anchor='w')
+        
+        sum_entry = tk.Entry(transfer_window, font=('Arial', 12), relief='flat', bd=2, bg='white')
+        sum_entry.pack(pady=(0, 15), padx=20, fill='x')
+        
+        # --- Button Frame ---
+        button_frame = tk.Frame(transfer_window, bg='#cad2c5')
+        button_frame.pack(pady=10)
+        
+        def attempt_iban_transfer():
+            iban = iban_entry.get().strip()
+            amount_str = sum_entry.get().strip().replace(',', '.') 
+            
+            if not iban or not amount_str:
+                self.show_message("Error", "Please fill in both IBAN and Amount.", "warning")
+                return
+
+            # IBAN Specific Validation
+            if not self.is_valid_ro_iban(iban):
+                self.show_message("Error", "Invalid Romanian IBAN format (Must be 24 characters, starting with 'RO').", "error")
+                return
+            
+            try:
+                transfer_amount = float(amount_str)
+                current_balance = self.balance_to_float(self.sold_amount)
+                
+                # Check 1: Is the amount valid?
+                if transfer_amount <= 0:
+                    self.show_message("Error", "Transfer amount must be positive.", "error")
+                    return
+                
+                # Check 2: Insufficient funds?
+                if transfer_amount > current_balance:
+                    self.show_message("Error", "Insufficient funds for this transfer.", "error")
+                    return
+                
+                # --- EXECUTE SUBTRACTION ---
+                new_balance = current_balance - transfer_amount
+                
+                # 1. Update the stored balance string
+                self.sold_amount = self.float_to_balance(new_balance)
+                
+                # 2. Update the GUI display
+                self.update_balance_display()
+
+                # Close the pop-up and show confirmation
+                transfer_window.destroy()
+                
+                # Show confirmation with masked IBAN
+                masked_iban = f"{iban[:4]}...{iban[-4:]}"
+                self.show_message("Success", 
+                                  f"Successfully sent {transfer_amount:,.2f} RON via IBAN to {masked_iban}.", 
+                                  "info")
+                
+            except ValueError:
+                self.show_message("Error", "Invalid amount entered. Please use numbers.", "error")
+        
+        # SEND Button
+        send_btn = tk.Button(button_frame, text="SEND", font=('Arial', 12, 'bold'),
+                             bg='#52796f', fg='white', command=attempt_iban_transfer, width=10)
+        send_btn.pack(side='left', padx=10)
+        
+        # EXIT Button
+        exit_btn = tk.Button(button_frame, text="EXIT", font=('Arial', 12),
+                             bg='#354f52', fg='white', command=transfer_window.destroy, width=10)
+        exit_btn.pack(side='left', padx=10)
 
 # --- Application Launch ---
 if __name__ == "__main__":
