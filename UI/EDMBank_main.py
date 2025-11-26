@@ -29,6 +29,13 @@ class EDMBankApp:
         x = (screen_width - initial_width) // 2
         y = (screen_height - initial_height) // 2
         self.main.geometry(f"{initial_width}x{initial_height}+{x}+{y}")
+        
+        # --- MODIFICATION 1: Store fixed center coordinates for popups ---
+        # Calculate the absolute center point of the main window on the screen
+        self.center_x = x + initial_width // 2
+        self.center_y = y + initial_height // 2
+        # ------------------------------------------------------------------
+        
         self.main.minsize(300, 500)
         self.main.configure(bg="#354f52")
 
@@ -64,10 +71,11 @@ class EDMBankApp:
     # --------------------------------------------------------------------------
 
     def show_message(self, title, message, message_type="info"):
-        self.main.update_idletasks()
-        x = self.main.winfo_x() + self.main.winfo_width() // 2 - 150
-        y = self.main.winfo_y() + self.main.winfo_height() // 2 - 75
-
+        # Note: messagebox popups are managed by the OS/Tkinter and automatically
+        # center over the parent window (self.main). The manual position calculation
+        # that was previously here is redundant and has been removed for cleanup,
+        # as it doesn't affect messagebox position.
+        
         if message_type == "info":
             messagebox.showinfo(title, message, parent=self.main)
         elif message_type == "warning":
@@ -493,10 +501,14 @@ class EDMBankApp:
         login_window.transient(self.main) 
         login_window.grab_set() 
 
-        self.main.update_idletasks()
-        x = self.main.winfo_x() + self.main.winfo_width() // 2 - login_window_width // 2
-        y = self.main.winfo_y() + self.main.winfo_height() // 2 - login_window_height // 2
+        # --- MODIFICATION 2: Use fixed center coordinates for this Toplevel ---
+        # The original code calculated x/y relative to the main window's current position.
+        # We now use the stored fixed center position of the main window (self.center_x/y).
+        x = self.center_x - login_window_width // 2
+        y = self.center_y - login_window_height // 2
         login_window.geometry(f"+{x}+{y}")
+        # ----------------------------------------------------------------------
+        
         login_window.resizable(False, False)
 
         tk.Label(login_window, text="Username:", font=('URW Gothic', 20),
@@ -600,16 +612,10 @@ class EDMBankApp:
         transfer_window.title("Fast Transfer")
         transfer_window.configure(bg='#cad2c5')
         
-        # Calculate position to center the window relative to the main window
-        self.main.update_idletasks()
-        main_width = self.main.winfo_width()
-        main_height = self.main.winfo_height()
-        
         popup_width = 350
         popup_height = 250
-        
-        x = self.main.winfo_x() + (main_width // 2) - (popup_width // 2)
-        y = self.main.winfo_y() + (main_height // 2) - (popup_height // 2)
+        x = self.center_x - popup_width // 2
+        y = self.center_y - popup_height // 2
         
         transfer_window.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
         transfer_window.resizable(False, False)
@@ -692,16 +698,11 @@ class EDMBankApp:
         transfer_window.title("IBAN Transfer")
         transfer_window.configure(bg='#cad2c5')
         
-        # Calculate position to center the window relative to the main window
-        self.main.update_idletasks()
-        main_width = self.main.winfo_width()
-        main_height = self.main.winfo_height()
-        
         popup_width = 380
         popup_height = 280
         
-        x = self.main.winfo_x() + (main_width // 2) - (popup_width // 2)
-        y = self.main.winfo_y() + (main_height // 2) - (popup_height // 2)
+        x = self.center_x - popup_width // 2
+        y = self.center_y - popup_height // 2
         
         transfer_window.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
         transfer_window.resizable(False, False)

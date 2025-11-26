@@ -11,13 +11,11 @@ from services.bank_service import BankService
 from DataBase.DataBase import Database
 
 def run_login_app(root, bank_service: BankService):
-    """Starts the Login application on the given root."""
-    # Passes start_main_app as the success callback
+    # passes start_main_app as the success callback
     EDMBankLogin(root, start_main_app, bank_service)
 
 def restart_app(current_root, bank_service):
-    """Destroys the current app root and restarts the login application."""
-    # Store the current position and size for the new login window
+    # store the current position and size for the new login window
     current_root.update_idletasks()
     x = current_root.winfo_x()
     y = current_root.winfo_y()
@@ -32,7 +30,7 @@ def restart_app(current_root, bank_service):
     new_root.geometry(f"{width}x{height}+{x}+{y}")
     new_root.minsize(300, 500)
     
-    run_login_app(new_root, bank_service) # 💡 Pass bank_service to run_login_app
+    run_login_app(new_root, bank_service)
     new_root.mainloop()
 
 def start_main_app(username, login_window, bank_service: BankService):
@@ -43,7 +41,7 @@ def start_main_app(username, login_window, bank_service: BankService):
     width = login_window.winfo_width()
     height = login_window.winfo_height()
     
-    # Destroy the login window
+    # destroy the login window
     login_window.destroy()
     
     # create a new main window in the EXACT same position and size
@@ -52,7 +50,7 @@ def start_main_app(username, login_window, bank_service: BankService):
     main_root.minsize(300, 500)
     
     # start the main app, passing the restart_app function as the logout callback
-    app = EDMBankApp(main_root, relauch_login_callback=lambda: restart_app(main_root, bank_service)) # <--- FIXED: Capture and pass bank_service
+    app = EDMBankApp(main_root, relauch_login_callback=lambda: restart_app(main_root, bank_service))
     app.logged_in_user = username
     # update the card display for the logged in user
     app.update_card_display()
