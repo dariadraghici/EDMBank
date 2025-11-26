@@ -65,7 +65,7 @@ class Database:
         salt = bcrypt.gensalt()
         Password = bcrypt.hashpw(Password_bytes, salt)
         Password = Password.decode()
-        expiry_date = user.card.expiry_date
+        #expiry_date = user.card.expiry_date
 
 
         user_data = {
@@ -73,7 +73,7 @@ class Database:
              "Password_hash" : Password,
              "Card_Number" : CardDigit,
              "CVV" : CVV,
-             "Expiry_date" : expiry_date,
+             #"Expiry_date" : expiry_date,
              "Sold" : sum,
              "Email" : email,
              "Iban" : IBAN,
@@ -101,8 +101,8 @@ class Database:
             return doc.get("Card_Number")
         elif date == 2:
             return doc.get("CVV")
-        elif date == 3:
-            return doc.get("Expiry_date")
+        # elif date == 3:
+        #     return doc.get("Expiry_date")
         elif date == 4:
             return doc.get("Sold")
         elif date == 5:
@@ -129,6 +129,10 @@ class Database:
     def get_user(self, username):
         doc_ref = self.db.collection("Users").document(username)
         doc = doc_ref.get()
+
+        if not doc.exists:
+            raise AccountNotFoundError(f"Account '{username}' does not exist.")
+        
         data = doc.to_dict
 
         email = data.get("Email")
@@ -155,11 +159,11 @@ class Database:
         )
         #history_formated = PaymentsHistory()
 
-        User(
+        user = User(
             credentials=credentials,
             balance=balance,
           #  payment_history=history_formated,
             card=card
         )
 
-        return User
+        return user

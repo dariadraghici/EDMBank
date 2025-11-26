@@ -2,14 +2,17 @@ import tkinter as tk
 from tkinter import messagebox
 from EDMBank_register import EDMBankRegister
 from EDMBank_keyboard import AlphaNumericKeyboard
+from services.bank_service import BankService
 from PIL import Image, ImageTk
+import os
 
 class EDMBankLogin:
-    def __init__(self, main, on_success_callback):
+    def __init__(self, main, on_success_callback, bank_service: BankService):
         self.main = main
         self.main.title("EDM Bank - Login")
         self.on_success_callback = on_success_callback
-        
+        self.bank_service = bank_service
+
         # initial dimensions for mobile: FORMAT 9 X 16 - RESPONSIVE
         screen_width = main.winfo_screenwidth()
         screen_height = main.winfo_screenheight()
@@ -45,10 +48,10 @@ class EDMBankLogin:
         self.main_container = tk.Frame(self.main, bg="#354f52")
         self.main_container.pack(fill='both', expand=True, padx=20, pady=20)
         
-        # ADDED: Keypad container (will hold either numeric or alphanumeric keyboard)
+        # Keypad container (will hold either numeric or alphanumeric keyboard)
         self.keyboard_container = tk.Frame(self.main_container, bg="#354f52")
         
-        # ADDED: Separate frames for each keyboard type
+        # Separate frames for each keyboard type
         self.numeric_frame = tk.Frame(self.keyboard_container, bg="#354f52")
         self.alphanum_frame = tk.Frame(self.keyboard_container, bg="#354f52")
         
@@ -57,10 +60,10 @@ class EDMBankLogin:
         # create login interface
         self.create_login_interface()
         
-        # Pack the main keyboard container at the bottom
+        # pack the main keyboard container at the bottom
         self.keyboard_container.pack(fill='both', expand=True, padx=50)
         
-        # Set initial focus and show the corresponding keyboard
+        # set initial focus and show the corresponding keyboard
         self.username_entry.focus_set()
         self.set_active_field('username')
     
@@ -69,11 +72,15 @@ class EDMBankLogin:
     def create_login_interface(self):
         # EDM Bank title (REPLACED WITH IMAGE LOGO)
         try:
+            # Build a reliable path to the image file
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            image_path = os.path.join(script_dir, "logoo.png")
+            
             # load and resize the image
-            original_image = Image.open('logoo.png')
+            original_image = Image.open(image_path)
             
             # using a fixed width of 400px for the logo
-            target_width = 300 
+            target_width = 400 
             aspect_ratio = original_image.height / original_image.width
             target_height = int(target_width * aspect_ratio)
 
@@ -92,7 +99,7 @@ class EDMBankLogin:
             logo_label = tk.Label(self.main_container, text="EDM Bank", 
                                  font=('Arial', 40, 'bold'), bg="#354f52", fg="white")
             logo_label.pack(pady=(50, 30))
-            messagebox.showwarning("Warning", "Logo image 'edm_bank_logo.gif' not found. Using text fallback.", parent=self.main)
+            messagebox.showwarning("Warning", "Logo image 'logoo.png' not found. Using text fallback.", parent=self.main)
         except Exception as e:
             # fallback for other errors (e.g., PIL not installed)
             logo_label = tk.Label(self.main_container, text="EDM Bank", 
@@ -102,13 +109,13 @@ class EDMBankLogin:
 
         # username frame
         username_frame = tk.Frame(self.main_container, bg="#354f52")
-        username_frame.pack(pady=20, fill='x', padx=50)
-        tk.Label(username_frame, text="Username:", font=('Arial', 16), 
+        username_frame.pack(pady=40, fill='x', padx=50)
+        tk.Label(username_frame, text="Username:", font=('Tex Gyre Chorus', 40), 
                  bg="#354f52", fg="white").pack(anchor='w')
         
         # type username box
-        self.username_entry = tk.Entry(username_frame, font=('Arial', 16), 
-                                       bg='white', fg='#2f3e46', relief='flat')
+        self.username_entry = tk.Entry(username_frame, font=('Courier', 25), 
+                                       bg='#2f3e46', fg='white', relief='flat')
         self.username_entry.pack(fill='x', pady=(10, 0), ipady=8)
         # default username for testing
         self.username_entry.insert(0, "POPESCU IRIS-MARIA")
@@ -119,7 +126,7 @@ class EDMBankLogin:
         # Enter Password for the box
         password_display_frame = tk.Frame(self.main_container, bg="#354f52")
         password_display_frame.pack(pady=30, fill='x', padx=50)
-        tk.Label(password_display_frame, text="Enter Password:", font=('Arial', 16), 
+        tk.Label(password_display_frame, text="Enter Password:", font=('Tex Gyre Chorus', 40), 
                  bg="#354f52", fg="white").pack(anchor='w')
         # password display (shows • for each entered digit)
         self.password_display = tk.Label(password_display_frame, text="", 
@@ -135,9 +142,9 @@ class EDMBankLogin:
         
         # register button added BEFORE the keypad frame
         register_btn = tk.Button(self.main_container, text="Don't have an account? Register here", 
-                                 font=('Arial', 12), bg="#354f52", fg="white", 
+                                 font=('Courier', 20, 'bold'), bg="#354f52", fg="white", 
                                  relief='flat', command=self.open_register_window)
-        register_btn.pack(pady=(0, 20))
+        register_btn.pack(pady=(20,200))
 
     # --------------------------------------------------------------------------
  
@@ -198,16 +205,17 @@ class EDMBankLogin:
                 bg_color = '#588157'
                 fg_color = '#cad2c5'
                 command = self.check_password
-                font_style = ('Arial', 27, 'bold')
+                font_style = ('Courier', 27, 'bold')
             elif text == '⌫':
                 bg_color = '#6f1d1b'
                 fg_color = '#cad2c5'
                 command = self.clear_password
+                font_style = ('Courier', 27, 'bold')
             else:
                 bg_color = '#84a98c'
                 fg_color = '#2f3e46'
                 command = lambda x=text: self.add_digit(x)
-                font_style = ('Arial', 27, 'bold')
+                font_style = ('Courier', 27, 'bold')
             
             btn = tk.Button(parent, text=text, font=font_style,
                             bg=bg_color, fg=fg_color, relief='flat',
@@ -254,7 +262,7 @@ class EDMBankLogin:
             # if username written
             if username:
                 self.main.withdraw()  # hide login window
-                self.on_success_callback(username, self.main)
+                self.on_success_callback(username, self.main, self.bank_service)
             else:
                 messagebox.showerror("Error", "Please enter a username!", parent=self.main)
                 # If error, re-show username keyboard
@@ -284,4 +292,4 @@ class EDMBankLogin:
         register_root.geometry(f"{width}x{height}+{x}+{y}")
         register_root.minsize(300, 500)
         
-        EDMBankRegister(register_root, self.main, self.on_success_callback)
+        EDMBankRegister(register_root, self.main, self.on_success_callback, self.bank_service)
