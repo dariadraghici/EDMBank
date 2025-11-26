@@ -67,7 +67,7 @@ class EDMBankContact:
                   style='Contact.TLabel',
                   background=LIGHT_BG,
                   foreground=DARK_TEXT,
-                  font=('Courier', 20, 'bold')
+                  font=('TeX Gyre Chorus', 25, 'bold')
                   ).grid(row=row, column=0, padx=10, pady=5, sticky='w')
         
         # Entry (Right Column - Read Only)
@@ -117,9 +117,9 @@ class EDMBankContact:
         user_details_frame.grid(row=1, column=0, sticky='ew')
         user_details_frame.grid_columnconfigure(1, weight=1) 
 
-        self._create_read_only_field(user_details_frame, "First Name:", self.first_name_var, 0)
-        self._create_read_only_field(user_details_frame, "Last Name:", self.last_name_var, 1)
-        self._create_read_only_field(user_details_frame, "Email:", self.email_var, 2)
+        self._create_read_only_field(user_details_frame, "First Name:", self.first_name_var, 0).config(font=('Courier', 18))
+        self._create_read_only_field(user_details_frame, "Last Name:", self.last_name_var, 1).config(font=('Courier', 18))
+        self._create_read_only_field(user_details_frame, "Email:", self.email_var, 2).config(font=('Courier', 18))
 
 
         # Row 2: Label for Problem Title
