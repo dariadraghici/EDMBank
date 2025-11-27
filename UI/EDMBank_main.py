@@ -6,6 +6,7 @@ from PIL import Image, ImageTk
 from EDMBank_contact import EDMBankContact
 import locale
 from EDMBank_profile import EDMBankProfile 
+from EDMBank_settings import EDMBankSettings 
 
 class EDMBankApp:
     def __init__(self, main, relauch_login_callback=None): 
@@ -71,10 +72,6 @@ class EDMBankApp:
     # --------------------------------------------------------------------------
 
     def show_message(self, title, message, message_type="info"):
-        # Note: messagebox popups are managed by the OS/Tkinter and automatically
-        # center over the parent window (self.main). The manual position calculation
-        # that was previously here is redundant and has been removed for cleanup,
-        # as it doesn't affect messagebox position.
         
         if message_type == "info":
             messagebox.showinfo(title, message, parent=self.main)
@@ -306,7 +303,7 @@ class EDMBankApp:
         elif selected == "Savings":
             self.show_message("Savings", "Manage your savings accounts", "info")
         elif selected == "Settings":
-            self.settings()
+            self.settings() # Calls the updated settings method
         elif selected == "Cards":
             self.show_cards()
         elif selected == "Payments":
@@ -414,6 +411,18 @@ class EDMBankApp:
                 self.show_message("Error", f"Could not load profile view: {e}", "error")
                 lbl = tk.Label(self.content_frame, text=f"Error Loading Profile View: {e}", bg="#cad2c5", fg="red")
                 lbl.pack(fill='both', expand=True)
+        elif view_name == "settings": 
+            self.content_frame.grid_rowconfigure(0, weight=1) 
+            self.content_frame.grid_columnconfigure(0, weight=1)
+            try:
+                EDMBankSettings(self.content_frame, 
+                               self.logged_in_user, 
+                               self.logged_in_user_email,
+                               self.switch_view) 
+            except Exception as e:
+                self.show_message("Error", f"Could not load settings view: {e}", "error")
+                lbl = tk.Label(self.content_frame, text=f"Error Loading Settings View: {e}", bg="#cad2c5", fg="red")
+                lbl.pack(fill='both', expand=True)
         # handle special callbacks from EDMBankProfile (and others)
         elif view_name == "logout_relaunch":
             self.logout_and_relaunch_login()
@@ -501,14 +510,10 @@ class EDMBankApp:
         login_window.transient(self.main) 
         login_window.grab_set() 
 
-        # --- MODIFICATION 2: Use fixed center coordinates for this Toplevel ---
-        # The original code calculated x/y relative to the main window's current position.
-        # We now use the stored fixed center position of the main window (self.center_x/y).
+        # fixed center coordinates for this toplevel
         x = self.center_x - login_window_width // 2
         y = self.center_y - login_window_height // 2
         login_window.geometry(f"+{x}+{y}")
-        # ----------------------------------------------------------------------
-        
         login_window.resizable(False, False)
 
         tk.Label(login_window, text="Username:", font=('URW Gothic', 20),
@@ -556,13 +561,118 @@ class EDMBankApp:
         self.show_message("Transaction History", "Your transaction history", "info")
 
     def add_money(self):
-        self.show_message("Add Money", "Deposit or transfer to account", "info")
+        # create the Toplevel window
+        add_money_window = tk.Toplevel(self.main)
+        add_money_window.title("Add Money from External Card")
+        add_money_window.configure(bg='#cad2c5')
+        
+        popup_width = 400
+        popup_height = 400
+        
+        # center the popup using the stored fixed center coordinates
+        x = self.center_x - popup_width // 2
+        y = self.center_y - popup_height // 2
+        
+        add_money_window.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
+        add_money_window.resizable(False, False)
+        add_money_window.grab_set() # make it modal
+        
+        main_frame = tk.Frame(add_money_window, bg='#cad2c5')
+        main_frame.pack(fill='both', expand=True, padx=20, pady=10)
+
+        # ----------------------------------------------------------------------
+        def create_input_field(parent, label_text, is_secure=False):
+            tk.Label(parent, text=label_text, font=('Tex Gyre Chorus', 16, 'bold'),
+                     bg='#cad2c5', fg='#354f52').pack(pady=(5, 2), anchor='w')
+            
+            entry = tk.Entry(parent, font=('Arial', 12), relief='flat', bd=2, bg='white')
+            if is_secure:
+                entry.config(show='*')
+            entry.pack(pady=(0, 10), fill='x')
+            return entry
+        # ----------------------------------------------------------------------
+        
+        # input fields
+        self.entry_card_number = create_input_field(main_frame, "CARD NUMBER:")
+        self.entry_card_holder = create_input_field(main_frame, "CARD HOLDER NAME:")
+        
+        # frame for expiry date and CVV side-by-side
+        details_frame = tk.Frame(main_frame, bg='#cad2c5')
+        details_frame.pack(fill='x', pady=5)
+        details_frame.grid_columnconfigure(0, weight=1)
+        details_frame.grid_columnconfigure(1, weight=1)
+
+        # Expiry date
+        expiry_frame = tk.Frame(details_frame, bg='#cad2c5')
+        expiry_frame.grid(row=0, column=0, sticky='ew', padx=(0, 10))
+        tk.Label(expiry_frame, text="EXPIRY (MM/YY):", font=('Tex Gyre Chorus', 16, 'bold'),
+                 bg='#cad2c5', fg='#354f52').pack(pady=(5, 2), anchor='w')
+        self.entry_expiry = tk.Entry(expiry_frame, font=('Arial', 12), relief='flat', bd=2, bg='white', width=10)
+        self.entry_expiry.pack(pady=(0, 10), fill='x')
+
+        # CVV
+        cvv_frame = tk.Frame(details_frame, bg='#cad2c5')
+        cvv_frame.grid(row=0, column=1, sticky='ew', padx=(10, 0))
+        tk.Label(cvv_frame, text="CVV:", font=('Tex Gyre Chorus', 16, 'bold'),
+                 bg='#cad2c5', fg='#354f52').pack(pady=(5, 2), anchor='w')
+        self.entry_cvv = tk.Entry(cvv_frame, font=('Arial', 12), relief='flat', bd=2, bg='white', show='*', width=10)
+        self.entry_cvv.pack(pady=(0, 10), fill='x')
+        
+        # transfer sum input
+        self.entry_amount = create_input_field(main_frame, "SUM TO BE DEPOSITED (RON):")
+        button_frame = tk.Frame(main_frame, bg='#cad2c5')
+        button_frame.pack(pady=20)
+        
+        def process_deposit():
+            card_number = self.entry_card_number.get().strip()
+            holder = self.entry_card_holder.get().strip()
+            expiry = self.entry_expiry.get().strip()
+            cvv = self.entry_cvv.get().strip()
+            amount_str = self.entry_amount.get().strip()
+            
+            if not all([card_number, holder, expiry, cvv, amount_str]):
+                self.show_message("Error", "Please fill in all card details and amount.", "warning")
+                return
+            
+            try:
+                # basic amount validation
+                transfer_amount = float(amount_str.replace(',', '.')) 
+                if transfer_amount <= 0:
+                    self.show_message("Error", "Deposit amount must be positive.", "error")
+                    return
+                
+                # close popup
+                add_money_window.destroy()
+                current_balance = self.balance_to_float(self.sold_amount)
+                new_balance = current_balance + transfer_amount
+                self.sold_amount = self.float_to_balance(new_balance)
+                self.update_balance_display()
+
+                # confirmation
+                self.show_message("Deposit Successful", 
+                                  f"Successfully deposited {self.float_to_balance(transfer_amount)} "
+                                  f"from card ending in {card_number[-4:]}.\n\n"
+                                  f"Your new balance is {self.sold_amount}.", 
+                                  "info")
+                
+            except ValueError:
+                self.show_message("Error", "Invalid amount entered. Please use numbers.", "error")
+
+        # DEPOSIT button
+        deposit_btn = tk.Button(button_frame, text="DEPOSIT", font=('Arial', 12, 'bold'),
+                              bg='#52796f', fg='white', command=process_deposit, width=12)
+        deposit_btn.pack(side='left', padx=10)
+        
+        # CANCEL button
+        cancel_btn = tk.Button(button_frame, text="CANCEL", font=('Arial', 12),
+                              bg='#354f52', fg='white', command=add_money_window.destroy, width=12)
+        cancel_btn.pack(side='left', padx=10)
     
     def make_payment(self):
         self.show_message("Payments", "Pay bills and services", "info")
 
     def settings(self):
-        self.show_message("Settings", "Application settings", "info")
+        self.switch_view("settings")
     
     def show_cards(self):
         self.show_message("Cards", "Manage your cards", "info")
