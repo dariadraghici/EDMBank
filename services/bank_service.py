@@ -38,4 +38,28 @@ class BankService:
             return True
         else:
             return False  
+        
+    def is_card_unique(self, card_number):
+        """
+        Check if the card number is unique in the database.
+        """
+        if self.db.card_exists(card_number) == True:
+            return False
+        return True
+    
+    def is_username_unique(self, username):
+        """
+        Checks if the username is unique.
+        """
+        try:
+            self.db.get_user(username)
+            return False
+        except AccountNotFoundError:
+            return True
+    
+    def add_user(self, user : User):
+        """
+        Adds a new user to database.
+        """
+        self.db.add_user(user)
     
