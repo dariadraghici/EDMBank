@@ -17,12 +17,17 @@ class EDMBankLogin:
         screen_width = main.winfo_screenwidth()
         screen_height = main.winfo_screenheight()
         
-        max_height = int(screen_height * 0.8) 
-        max_width = int(max_height * 9/16) 
+        # START WITH SMALLER SIZE THAT FITS ON SCREEN BUT KEEP 9:16 ASPECT RATIO
+        max_width = min(990, screen_width)
+        max_height = min(1760, screen_height - 100)
 
-        # Set initial size based on the calculated max values
-        initial_width = max_width
-        initial_height = max_height
+        # Calculate proportional size maintaining 9:16 aspect ratio
+        if max_width / max_height > 9/16:
+            initial_width = int(max_height * 9/16)
+            initial_height = max_height
+        else:
+            initial_width = max_width
+            initial_height = int(max_width * 16/9)
             
         # Center the window
         x = (screen_width - initial_width) // 2
@@ -30,7 +35,6 @@ class EDMBankLogin:
         self.main.geometry(f"{initial_width}x{initial_height}+{x}+{y}")
         self.main.minsize(300, 500)
         self.main.configure(bg="#354f52")
-
 
         # password and field state
         self.correct_password = "000000"

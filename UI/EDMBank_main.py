@@ -17,8 +17,8 @@ class EDMBankApp:
         screen_width = main.winfo_screenwidth()
         screen_height = main.winfo_screenheight()
         
-        max_height = int(screen_height * 0.8) 
-        max_width = int(max_height * 9/16) 
+        max_width = min(990, screen_width)  
+        max_height = min(1760, screen_height - 100)
         
         if max_width / max_height > 9/16:
             initial_width = int(max_height * 9/16)
@@ -31,6 +31,7 @@ class EDMBankApp:
         y = (screen_height - initial_height) // 2
         self.main.geometry(f"{initial_width}x{initial_height}+{x}+{y}")
         
+        # --- MODIFICATION 1: Store fixed center coordinates for popups ---
         # Calculate the absolute center point of the main window on the screen
         self.center_x = x + initial_width // 2
         self.center_y = y + initial_height // 2
