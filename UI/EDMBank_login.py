@@ -17,17 +17,12 @@ class EDMBankLogin:
         screen_width = main.winfo_screenwidth()
         screen_height = main.winfo_screenheight()
         
-        # START WITH SMALLER SIZE THAT FITS ON SCREEN BUT KEEP 9:16 ASPECT RATIO
-        max_width = min(990, screen_width)
-        max_height = min(1760, screen_height - 100)
+        max_height = int(screen_height * 0.8) 
+        max_width = int(max_height * 9/16) 
 
-        # Calculate proportional size maintaining 9:16 aspect ratio
-        if max_width / max_height > 9/16:
-            initial_width = int(max_height * 9/16)
-            initial_height = max_height
-        else:
-            initial_width = max_width
-            initial_height = int(max_width * 16/9)
+        # Set initial size based on the calculated max values
+        initial_width = max_width
+        initial_height = max_height
             
         # Center the window
         x = (screen_width - initial_width) // 2

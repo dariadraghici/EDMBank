@@ -1,6 +1,6 @@
 import sys
 import os
-import tkinter as tk # Importul tk este mutat aici pentru a fi disponibil
+import tkinter as tk
 from tkinter import TclError
 
 # Add the project's root directory to the Python path
