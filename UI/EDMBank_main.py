@@ -7,6 +7,7 @@ from EDMBank_contact import EDMBankContact
 import locale
 from EDMBank_profile import EDMBankProfile 
 from EDMBank_settings import EDMBankSettings 
+from ui_utils import UIHelper
 
 class EDMBankApp:
     def __init__(self, main, relauch_login_callback=None): 
@@ -31,6 +32,9 @@ class EDMBankApp:
         y = (screen_height - initial_height) // 2
         self.main.geometry(f"{initial_width}x{initial_height}+{x}+{y}")
         
+        # Initialize UI Helper
+        self.ui = UIHelper(initial_width, initial_height)
+
         # --- MODIFICATION 1: Store fixed center coordinates for popups ---
         # Calculate the absolute center point of the main window on the screen
         self.center_x = x + initial_width // 2
@@ -98,11 +102,14 @@ class EDMBankApp:
 
     def on_resize(self, event):
         window_width = self.main.winfo_width()
+        window_height = self.main.winfo_height()
         
         if str(event.widget) == '.':
             self.main.unbind('<Configure>')
         
         try:
+            self.ui.update_dimensions(window_width, window_height)
+            
             if hasattr(self, 'buttons_frame'):
                 if hasattr(self, 'card_frame'):
                     if window_width > 600 and not self.is_large_screen:
@@ -112,7 +119,11 @@ class EDMBankApp:
                         self.switch_to_mobile_layout()
                         self.is_large_screen = False
                     else:
-                        self.update_card_background(rebind=False)
+                        # Force update of layout even if mode didn't change, to apply new dimensions
+                        if self.is_large_screen:
+                            self.switch_to_desktop_layout()
+                        else:
+                            self.switch_to_mobile_layout()
         finally:
              if str(event.widget) == '.':
                  self.main.bind('<Configure>', self.on_resize)
@@ -143,7 +154,7 @@ class EDMBankApp:
                 else:
                     self.card_frame.itemconfig(self.card_image_item, image=self.card_background_image)
                 
-                padding = 20
+                padding = self.ui.w_pct(2)
                 
                 # Move text items to new coordinates
                 self.card_frame.coords(self.text_bank, padding, padding)
@@ -179,9 +190,9 @@ class EDMBankApp:
         for text, command in buttons_data:
             # use ttk.Button with the new 'MainAction.TButton' style
             btn = ttk.Button(self.buttons_frame, text=text, command=command, style='MainAction.TButton')
-            btn.pack(fill='x', padx=10, pady=6)
+            btn.pack(fill='x', padx=self.ui.w_pct(1), pady=self.ui.h_pct(0.2))
         
-        self.card_frame.configure(height=360, width=500)
+        self.card_frame.configure(height=self.ui.h_pct(25), width=self.ui.w_pct(60))
         self.card_frame.grid_propagate(False)
         self.update_card_display()
         self.update_card_background() 
@@ -210,9 +221,9 @@ class EDMBankApp:
         for text, command, row, col in buttons_data:
             # use ttk.Button with the new 'MainAction.TButton' style
             btn = ttk.Button(self.buttons_frame, text=text, command=command, style='MainAction.TButton')
-            btn.grid(row=row, column=col, padx=6, pady=6, sticky='nsew')
+            btn.grid(row=row, column=col, padx=self.ui.w_pct(1), pady=self.ui.h_pct(0.2), sticky='nsew')
         
-        self.card_frame.configure(height=240, width=400)
+        self.card_frame.configure(height=self.ui.h_pct(20), width=self.ui.w_pct(80))
         self.card_frame.grid_propagate(False)
         self.update_card_display()
         self.update_card_background() 
@@ -231,8 +242,8 @@ class EDMBankApp:
     # --------------------------------------------------------------------------
 
     def create_top_menu(self):
-        top_frame = tk.Frame(self.main_container, bg="#354f52", height=120)
-        top_frame.grid(row=0, column=0, sticky='ew', padx=20, pady=10)
+        top_frame = tk.Frame(self.main_container, bg="#354f52", height=self.ui.h_pct(8))
+        top_frame.grid(row=0, column=0, sticky='ew', padx=self.ui.w_pct(4), pady=self.ui.h_pct(1))
         top_frame.grid_propagate(False)
         top_frame.grid_columnconfigure(1, weight=1)
 
@@ -240,10 +251,10 @@ class EDMBankApp:
         
         # configure style for main action buttons
         style.configure('MainAction.TButton',
-                            font=('Courier', 20, 'bold'),
+                            font=self.ui.get_font('Courier', 14, 'bold'),
                             foreground='#2f3e46',
                             background='#52796f',
-                            padding=20)
+                            padding=self.ui.w_pct(2))
         style.map('MainAction.TButton',
                         background=[('active', '#84a98c')])
         
@@ -254,29 +265,29 @@ class EDMBankApp:
                               foreground='white',
                               selectbackground='#84a98c',
                               selectforeground='white',
-                              font=('Courier', 26, 'bold'),
-                              padding=10)
+                              font=self.ui.get_font('Courier', 18, 'bold'),
+                              padding=self.ui.w_pct(1))
 
         style.map('Green.TCombobox', 
                       fieldbackground=[('readonly', '#52796f')],
                       background=[('readonly', '#84a98c')])
         
-        self.main.option_add('*TCombobox*Listbox.font', ('Courier', 14))
+        self.main.option_add('*TCombobox*Listbox.font', self.ui.get_font('Courier', 12))
 
         self.dropdown_var = tk.StringVar()
         self.dropdown_var.set("Menu")
         
         dropdown = ttk.Combobox(top_frame, textvariable=self.dropdown_var, 
                                      values=["Accounts", "Savings", "Settings", "Cards", "Payments"], 
-                                     state="readonly", width=12, background='#52796f',
+                                     state="readonly", width=10, background='#52796f',
                                      style="Green.TCombobox")
 
-        dropdown.grid(row=0, column=0, sticky='w', padx=(0, 10))
+        dropdown.grid(row=0, column=0, sticky='w', padx=(0, self.ui.w_pct(2)))
         dropdown.bind("<<ComboboxSelected>>", self.handle_dropdown_selection) 
 
         try:
             original_image = Image.open('logoo.png')
-            target_height = 120
+            target_height = self.ui.h_pct(8)
             aspect_ratio = original_image.width / original_image.height
             target_width = int(target_height * aspect_ratio)
             resized_image = original_image.resize((target_width, target_height), Image.LANCZOS)
@@ -284,14 +295,14 @@ class EDMBankApp:
             title_label = tk.Label(top_frame, image=self.top_logo_image, bg="#354f52")
             title_label.grid(row=0, column=1, sticky='')
         except Exception:
-            title_label = tk.Label(top_frame, text="EDM Bank", font=('Arial', 30, 'bold'),
+            title_label = tk.Label(top_frame, text="EDM Bank", font=self.ui.get_font('Arial', 24, 'bold'),
                                      bg='#354f52', fg="#FFFFFF")
             title_label.grid(row=0, column=1, sticky='ew')
 
-        login_btn = tk.Button(top_frame, text="LOGOUT", font=('Arial', 12, 'bold'), 
-                              bg="#354f52", fg='white', relief='flat', padx=25,
-                              height=2, command=self.logout_and_relaunch_login)
-        login_btn.grid(row=0, column=2, sticky='e', padx=(10, 0))
+        login_btn = tk.Button(top_frame, text="LOGOUT", font=self.ui.get_font('Arial', 10, 'bold'), 
+                              bg="#354f52", fg='white', relief='flat', padx=self.ui.w_pct(3),
+                              height=1, command=self.logout_and_relaunch_login)
+        login_btn.grid(row=0, column=2, sticky='e', padx=(self.ui.w_pct(2), 0))
 
     # --------------------------------------------------------------------------
     def handle_dropdown_selection(self, event):
@@ -332,18 +343,13 @@ class EDMBankApp:
         
         self.create_card(self.content_frame)
 
-        sold_btn = tk.Button(self.content_frame, text="VIEW BALANCE", font=('Courier', 20, 'bold'),
-                              bg='#52796f', fg='#ffffff', relief='flat',
-                              height=3, command=self.toggle_sold)
-        sold_btn.grid(row=1, column=0, sticky='ew', pady=15)
-
+        # Display balance directly without button
         self.sold_label = tk.Label(self.content_frame, text=self.sold_amount,
-                                     font=('Arial', 20, 'bold'), bg='#cad2c5', fg='#2f3e46')
-        self.sold_label.grid(row=2, column=0, pady=10)
-        self.sold_label.grid_remove()
+                                     font=self.ui.get_font('Arial', 20, 'bold'), bg='#cad2c5', fg='#2f3e46')
+        self.sold_label.grid(row=1, column=0, pady=self.ui.h_pct(1))
         
         self.buttons_frame = tk.Frame(self.content_frame, bg='#cad2c5')
-        self.buttons_frame.grid(row=3, column=0, sticky='nsew', pady=20)
+        self.buttons_frame.grid(row=2, column=0, sticky='nsew', pady=self.ui.h_pct(1))
         
         current_width = self.main.winfo_width()
         if current_width > 600:
@@ -357,25 +363,25 @@ class EDMBankApp:
 
     def create_card(self, parent):
         self.card_frame = tk.Canvas(parent, bg="#2f3e46", highlightthickness=0)
-        self.card_frame.grid(row=0, column=0, sticky='n', pady=20)
+        self.card_frame.grid(row=0, column=0, sticky='n', pady=self.ui.h_pct(2))
         
         self.card_background_image = None
         self.card_image_item = None 
         
         self.text_bank = self.card_frame.create_text(0, 0, text="EDM Bank", 
-                                                     font=('Arial', 16, 'bold'), fill='white', anchor='nw')
+                                                     font=self.ui.get_font('Arial', 12, 'bold'), fill='white', anchor='nw')
         
         self.text_chip = self.card_frame.create_text(0, 0, text="◘ Chip", 
-                                                     font=('Arial', 12), fill='white', anchor='ne')
+                                                     font=self.ui.get_font('Arial', 10), fill='white', anchor='ne')
         
         self.text_number = self.card_frame.create_text(0, 0, text=self.format_card_number(self.card_number), 
-                                                         font=('Arial', 18, 'bold'), fill='white', anchor='center')
+                                                         font=self.ui.get_font('Arial', 14, 'bold'), fill='white', anchor='center')
         
         self.text_holder = self.card_frame.create_text(0, 0, text="POPESCU IRINA-MARIA", 
-                                                         font=('Arial', 12), fill='white', anchor='sw')
+                                                         font=self.ui.get_font('Arial', 10), fill='white', anchor='sw')
         
         self.text_expiry = self.card_frame.create_text(0, 0, text=self.card_expiry, 
-                                                         font=('Arial', 12), fill='white', anchor='se')
+                                                         font=self.ui.get_font('Arial', 10), fill='white', anchor='se')
         self.update_card_background(rebind=False)
         
     # --------------------------------------------------------------------------
@@ -418,7 +424,8 @@ class EDMBankApp:
                 EDMBankSettings(self.content_frame, 
                                self.logged_in_user, 
                                self.logged_in_user_email,
-                               self.switch_view) 
+                               self.switch_view,
+                               self.ui) 
             except Exception as e:
                 self.show_message("Error", f"Could not load settings view: {e}", "error")
                 lbl = tk.Label(self.content_frame, text=f"Error Loading Settings View: {e}", bg="#cad2c5", fg="red")
@@ -434,8 +441,8 @@ class EDMBankApp:
     # --------------------------------------------------------------------------
 
     def create_bottom_menu(self):
-        nav_frame = tk.Frame(self.main_container, bg="#7ecd9d", height=80)
-        nav_frame.grid(row=2, column=0, sticky='ew', padx=0, pady=30)
+        nav_frame = tk.Frame(self.main_container, bg="#7ecd9d", height=self.ui.h_pct(8))
+        nav_frame.grid(row=2, column=0, sticky='ew', padx=0, pady=self.ui.h_pct(2))
         nav_frame.grid_propagate(False)
         
         nav_buttons_data = [
@@ -453,19 +460,19 @@ class EDMBankApp:
             btn_frame.pack(side='left', expand=True, fill='both')
             try:
                 original_image = Image.open(icon_filename)
-                target_size = (80, 80)
+                target_size = (self.ui.h_pct(5), self.ui.h_pct(5))
                 resized_image = original_image.resize(target_size, Image.LANCZOS)  
                 photo_image = ImageTk.PhotoImage(resized_image)
                 self.nav_images.append(photo_image)  
                 icon_label = tk.Label(btn_frame, image=photo_image, bg="#354f52", cursor='hand2')
             except FileNotFoundError:
-                icon_label = tk.Label(btn_frame, text=text[0], font=('FreeMono', 25, 'bold'), 
+                icon_label = tk.Label(btn_frame, text=text[0], font=('FreeMono', 20, 'bold'), 
                                       bg="#84a98c", fg="#323A87", cursor='hand2')
-            icon_label.pack(pady=(10, 2))
+            icon_label.pack(pady=(self.ui.h_pct(0.5), 0))
 
-            text_label = tk.Label(btn_frame, text=text, font=('Courier', 16, 'bold'),
+            text_label = tk.Label(btn_frame, text=text, font=('Courier', 10, 'bold'),
                                      bg="#354f52", fg='#ffffff', cursor='hand2')
-            text_label.pack(pady=(0, 10))
+            text_label.pack(pady=(0, self.ui.h_pct(0.5)))
             
             for widget in [btn_frame, icon_label, text_label]:
                 widget.bind("<Button-1>", lambda e, cmd=command: cmd())

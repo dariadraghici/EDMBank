@@ -4,11 +4,12 @@ from PIL import Image, ImageTk
 import os
 
 class EDMBankSettings:
-    def __init__(self, parent_frame, logged_in_user, logged_in_email, switch_view_callback):
+    def __init__(self, parent_frame, logged_in_user, logged_in_email, switch_view_callback, ui_helper):
         self.parent_frame = parent_frame
         self.logged_in_user = logged_in_user.upper() 
         self.logged_in_email = logged_in_email 
         self.switch_view_callback = switch_view_callback
+        self.ui = ui_helper
         
         # initial data
         self.last_name, self.first_name = self._split_name(self.logged_in_user)
@@ -26,15 +27,15 @@ class EDMBankSettings:
 
     def _set_styles(self):
         style = ttk.Style()
-        style.configure('SettingsTitle.TLabel', background='#cad2c5', foreground='#354f52', font=('Tex Gyre Chorus', 25, 'bold'))
-        style.configure('SettingsData.TLabel', background='#cad2c5', foreground='#2f3e46', font=('Courier', 20))
+        style.configure('SettingsTitle.TLabel', background='#cad2c5', foreground='#354f52', font=self.ui.get_font('Tex Gyre Chorus', 25, 'bold'))
+        style.configure('SettingsData.TLabel', background='#cad2c5', foreground='#2f3e46', font=self.ui.get_font('Courier', 20))
 
         # RED DELETE button style for account deletion
-        style.configure('Delete.TButton', foreground='white', background='#a90000', font=('Courier', 20, 'bold'), padding=10)
+        style.configure('Delete.TButton', foreground='white', background='#a90000', font=self.ui.get_font('Courier', 20, 'bold'), padding=self.ui.w_pct(2))
         style.map('Delete.TButton', background=[('active', '#ff6666')])
         
         # exit button
-        style.configure('Exit.TButton', foreground='white', background='#354f52', font=('Courier', 20, 'bold'), padding=10)
+        style.configure('Exit.TButton', foreground='white', background='#354f52', font=self.ui.get_font('Courier', 20, 'bold'), padding=self.ui.w_pct(2))
         style.map('Exit.TButton', background=[('active', '#2f3e46')])
 
     # ------------------------------------------------------------------------------
@@ -61,19 +62,19 @@ class EDMBankSettings:
         ttk.Separator(parent, orient=tk.HORIZONTAL).grid(row=row+1, column=0, columnspan=2, sticky='ew')
 
 
-    def load_profile_image(self, canvas):
+    def load_profile_image(self, canvas, size_px):
         try:
             # load and resize the image
             original_image = Image.open(self.profile_image_path)
-            size = (150, 150)
+            size = (size_px, size_px)
             resized_image = original_image.resize(size, Image.LANCZOS)
             self.profile_photo_tk = ImageTk.PhotoImage(resized_image)
             
             # draw the image on the canvas
-            canvas.create_image(75, 75, image=self.profile_photo_tk, anchor='center')
+            canvas.create_image(size_px//2, size_px//2, image=self.profile_photo_tk, anchor='center')
         except Exception:
             # fallback text if image not found
-            canvas.create_text(75, 75, text="Profile\nPic", font=('Arial', 16), fill='black', justify=tk.CENTER)
+            canvas.create_text(size_px//2, size_px//2, text="Profile\nPic", font=self.ui.get_font('Arial', 16), fill='black', justify=tk.CENTER)
 
     # ------------------------------------------------------------------------------
 
@@ -82,23 +83,24 @@ class EDMBankSettings:
         for widget in self.parent_frame.winfo_children():
             widget.destroy()
             
-        main_content = tk.Frame(self.parent_frame, bg="#cad2c5", padx=20, pady=20)
+        main_content = tk.Frame(self.parent_frame, bg="#cad2c5", padx=self.ui.w_pct(4), pady=self.ui.h_pct(2))
         main_content.pack(fill='both', expand=True)
 
-        tk.Label(main_content, text="ACCOUNT SETTINGS", font=('Arial', 40, 'bold'),
-                 bg='#cad2c5', fg='#2f3e46').pack(pady=(20, 60))
+        tk.Label(main_content, text="ACCOUNT SETTINGS", font=self.ui.get_font('Arial', 40, 'bold'),
+                 bg='#cad2c5', fg='#2f3e46').pack(pady=(self.ui.h_pct(2), self.ui.h_pct(6)))
         
         details_frame = tk.Frame(main_content, bg="#cad2c5")
-        details_frame.pack(fill='x', pady=10)
+        details_frame.pack(fill='x', pady=self.ui.h_pct(1))
         
         # configure columns for image (left) and fields (right)
         details_frame.grid_columnconfigure(0, weight=1) 
         details_frame.grid_columnconfigure(1, weight=3) 
 
         # profile picture section (mimics profile page visually)
-        image_canvas = tk.Canvas(details_frame, width=150, height=150, bg="lightgray", highlightthickness=0, borderwidth=2, relief='groove')
-        image_canvas.grid(row=0, column=0, padx=10, pady=10, sticky='n', rowspan=4)
-        self.load_profile_image(image_canvas)
+        img_size = self.ui.get_size(150)
+        image_canvas = tk.Canvas(details_frame, width=img_size, height=img_size, bg="lightgray", highlightthickness=0, borderwidth=2, relief='groove')
+        image_canvas.grid(row=0, column=0, padx=self.ui.w_pct(2), pady=self.ui.h_pct(1), sticky='n', rowspan=4)
+        self.load_profile_image(image_canvas, img_size)
 
         # fields frame (read-only info)
         fields_frame = tk.Frame(details_frame, bg="#cad2c5")
@@ -118,17 +120,17 @@ class EDMBankSettings:
         self._create_info_field(fields_frame, "Account Created:", self.account_creation_date, 6)
         
         action_frame = tk.Frame(main_content, bg='#cad2c5')
-        action_frame.pack(fill='x', pady=40)
+        action_frame.pack(fill='x', pady=self.ui.h_pct(4))
         action_frame.grid_columnconfigure(0, weight=1)
         action_frame.grid_columnconfigure(1, weight=1)
         
         # delete account button
         delete_btn = ttk.Button(action_frame, text="DELETE ACCOUNT", command=self.delete_account, style='Delete.TButton')
-        delete_btn.grid(row=0, column=0, padx=10, sticky='ew')
+        delete_btn.grid(row=0, column=0, padx=self.ui.w_pct(2), sticky='ew')
         
         # exit button
         exit_btn = ttk.Button(action_frame, text="EXIT", command=self.exit_view, style='Exit.TButton')
-        exit_btn.grid(row=0, column=1, padx=10, sticky='ew')
+        exit_btn.grid(row=0, column=1, padx=self.ui.w_pct(2), sticky='ew')
 
 
     # ------------------------------------------------------------------------------
