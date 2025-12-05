@@ -2,9 +2,10 @@ import tkinter as tk
 from tkinter import ttk
 
 class AlphaNumericKeyboard:
-    def __init__(self, parent_frame, target_entry):
+    def __init__(self, parent_frame, target_entry, ui_helper=None):
         self.parent_frame = parent_frame
         self.target_entry = target_entry
+        self.ui = ui_helper
         self.is_shift_active = False
         self.letter_buttons = {}
         
@@ -50,27 +51,28 @@ class AlphaNumericKeyboard:
             col_span = item[3] if len(item) > 3 else 1 
             
             # button styling and command logic
+            if self.ui:
+                font_style = self.ui.get_font('Courier', 27, 'bold')
+            else:
+                font_style = ('Courier', 27, 'bold')
+
             if text in ('⬆', '⌫'):
                 bg_color = '#64748b'
                 fg_color = 'white'
                 command = self.toggle_shift if text == '⬆' else self.backspace
-                font_style = ('Courier', 27, 'bold')
             elif text in (' ', '@', '.', '_'):
                 bg_color = '#475569'
                 fg_color = 'white'
                 command = lambda t=text: self.type_character(t)
-                font_style = ('Courier', 27, 'bold')
             elif text == 'ENTER':
                 bg_color = '#588157'
                 fg_color = 'white'
                 command = self.submit 
-                font_style = ('Courier', 27, 'bold')
             else:
                 # standard alphanumeric keys and numbers
                 bg_color = '#84a98c'
                 fg_color = '#2f3e46'
                 command = lambda t=text: self.type_character(t)
-                font_style = ('Courier', 27, 'bold')
             
             # key change: smaller font (10) and no explicit height
             btn = tk.Button(self.parent_frame, text=text, font=font_style,

@@ -4,6 +4,7 @@ from tkinter import messagebox
 from EDMBank_keyboard import AlphaNumericKeyboard 
 from services.bank_service import BankService
 from user_management.user import User, UserCredentials, PaymentsHistory, Card
+from ui_utils import UIHelper
 
 class EDMBankRegister:
 
@@ -15,6 +16,10 @@ class EDMBankRegister:
         self.on_success_callback = on_success_callback # Store the success callback
         self.bank_service = bank_service
         
+        # Initialize UI Helper
+        self.main.update_idletasks() # Ensure geometry is applied
+        self.ui = UIHelper(self.main.winfo_width(), self.main.winfo_height())
+
         # variables for password management
         self.entered_password = ""
         self.entered_confirm_password = ""
@@ -40,15 +45,15 @@ class EDMBankRegister:
     # helper function to create standard text/email input field
     def create_entry_field(self, parent, label_text, field_name, label_font=('Arial', 14)):
         frame = tk.Frame(parent, bg="#354f52")
-        frame.pack(pady=10, fill='x')
+        frame.pack(pady=self.ui.h_pct(0.2), fill='x')
         
         # uses the passed label_font
         tk.Label(frame, text=label_text, font=label_font, 
                 bg="#354f52", fg="white").pack(anchor='w')
         
-        entry = tk.Entry(frame, font=('Courier', 20), 
+        entry = tk.Entry(frame, font=self.ui.get_font('Courier', 16), 
                          bg='#2f3e46', fg='white', relief='flat')
-        entry.pack(fill='x', pady=(5, 0), ipady=12)
+        entry.pack(fill='x', pady=(self.ui.h_pct(0.2), 0), ipady=self.ui.h_pct(0.5))
         # Bind FocusIn to set active field and show alphanumeric keyboard
         entry.bind("<FocusIn>", lambda e, name=field_name: self.set_active_field(name))
         return entry
@@ -58,16 +63,16 @@ class EDMBankRegister:
     # helper function to create password fields
     def create_password_field(self, parent, label_text, field_name, label_font=('Arial', 14)):
         container = tk.Frame(parent, bg="#354f52")
-        container.pack(pady=10, fill='x')
+        container.pack(pady=self.ui.h_pct(0.2), fill='x')
         
         # uses the passed label_font
         tk.Label(container, text=label_text, font=label_font, 
                 bg="#354f52", fg="white").pack(anchor='w')
         
         display = tk.Label(container, text="", 
-                           font=('Courier', 27), bg="#2f3e46", 
-                           fg="white", height=1, anchor='w', padx=10)
-        display.pack(fill='x', pady=(10, 20), ipady=12)
+                           font=self.ui.get_font('Courier', 20), bg="#2f3e46", 
+                           fg="white", height=1, anchor='w', padx=self.ui.w_pct(2))
+        display.pack(fill='x', pady=(self.ui.h_pct(0.2), self.ui.h_pct(0.5)), ipady=self.ui.h_pct(0.5))
         # Bind click to select this field and show the numeric keypad
         display.bind("<Button-1>", lambda e, name=field_name: self.set_active_field(name))
         return display, container
@@ -77,19 +82,19 @@ class EDMBankRegister:
     def create_register_interface(self):
         # EDM Bank title
         title_label = tk.Label(self.main_container, text="Register Account", 
-                              font=('Arial', 60, 'bold'), bg="#354f52", fg="white")
-        title_label.pack(pady=(30, 20))
+                              font=self.ui.get_font('Arial', 40, 'bold'), bg="#354f52", fg="white")
+        title_label.pack(pady=(self.ui.h_pct(1), self.ui.h_pct(1)))
         
         # container for form elements
         self.form_frame = tk.Frame(self.main_container, bg="#354f52")
-        self.form_frame.pack(fill='x', padx=50)
+        self.form_frame.pack(fill='x', padx=self.ui.w_pct(5))
 
         # username input
         self.username_entry = self.create_entry_field(
             self.form_frame, 
             "Username:", 
             'username', 
-            label_font=('Tex Gyre Chorus', 40)
+            label_font=self.ui.get_font('Tex Gyre Chorus', 25)
         )
 
         # email input
@@ -97,7 +102,7 @@ class EDMBankRegister:
             self.form_frame, 
             "Email:", 
             'email',
-            label_font=('Tex Gyre Chorus', 40)
+            label_font=self.ui.get_font('Tex Gyre Chorus', 25)
         )
         
         # password displays
@@ -105,31 +110,34 @@ class EDMBankRegister:
             self.form_frame, 
             "Password (6 digits):", 
             'password',
-            label_font=('Tex Gyre Chorus', 40)
+            label_font=self.ui.get_font('Tex Gyre Chorus', 25)
         )
 
         self.confirm_password_display, self.confirm_password_container = self.create_password_field(
             self.form_frame, 
             "Confirm Password:", 
             'confirm_password',
-            label_font=('Tex Gyre Chorus', 40)
+            label_font=self.ui.get_font('Tex Gyre Chorus', 25)
         )
 
         # initialize alphanumeric keyboard (must be done after entry widgets are created)
-        self.alphanum_keyboard = AlphaNumericKeyboard(self.alphanum_frame, self.username_entry)
+        self.alphanum_keyboard = AlphaNumericKeyboard(self.alphanum_frame, self.username_entry, self.ui)
         
         # Back to Login Button (positioned above the dynamic keyboard area)
         back_btn = tk.Button(self.main_container, text="← Back to Login", 
-                             font=('Courier', 20, 'bold'), bg="#354f52", fg="#cad2c5", 
+                             font=self.ui.get_font('Courier', 16, 'bold'), bg="#354f52", fg="#cad2c5", 
                              relief='flat', command=self.back_to_login)
-        back_btn.pack(pady=(10, 60))
+        back_btn.pack(pady=(self.ui.h_pct(1), self.ui.h_pct(1)))
         
         # Pack the main keyboard container at the bottom
-        self.keyboard_container.pack(fill='both', expand=True, padx=50)
+        self.keyboard_container.pack(fill='both', expand=True, padx=self.ui.w_pct(5))
         
         # Set initial focus to username and show alphanumeric keyboard
         self.username_entry.focus_set()
         self.set_active_field('username') 
+        
+        # Bind physical keyboard events for password fields
+        self.main.bind('<Key>', self.handle_physical_keypress) 
     
     # --------------------------------------------------------------------------
         
@@ -155,22 +163,22 @@ class EDMBankRegister:
                 bg_color = '#588157'
                 fg_color = 'white'
                 command = self.attempt_register
-                font_style = ('Courier', 27, 'bold')
+                font_style = self.ui.get_font('Courier', 20, 'bold')
             elif text == '⌫':
                 bg_color = '#6f1d1b'
                 fg_color = 'white'
                 command = self.clear_active_password
-                font_style = ('Courier', 27, 'bold')
+                font_style = self.ui.get_font('Courier', 20, 'bold')
             else:
                 bg_color = '#84a98c'
                 fg_color = '#2f3e46'
                 command = lambda x=text: self.add_digit(x)
-                font_style = ('Courier', 27, 'bold')
+                font_style = self.ui.get_font('Courier', 20, 'bold')
             
             btn = tk.Button(parent, text=text, font=font_style,
                            bg=bg_color, fg=fg_color, relief='flat',
                            command=command)
-            btn.grid(row=row, column=col, padx=5, pady=5, sticky='nsew')
+            btn.grid(row=row, column=col, padx=self.ui.w_pct(1), pady=self.ui.h_pct(0.2), sticky='nsew')
             
     # ----------------------------------------------------------------------
 
@@ -312,3 +320,17 @@ class EDMBankRegister:
         self.main.destroy() 
         # un-hide the login window
         self.login_window.deiconify()
+
+    def handle_physical_keypress(self, event):
+        """Handle physical keyboard events for password fields."""
+        if self.active_field in ['password', 'confirm_password']:
+            if event.char.isdigit():
+                self.add_digit(event.char)
+            elif event.keysym == 'BackSpace':
+                if self.active_field == 'password':
+                    self.entered_password = self.entered_password[:-1]
+                elif self.active_field == 'confirm_password':
+                    self.entered_confirm_password = self.entered_confirm_password[:-1]
+                self.update_password_displays()
+            elif event.keysym == 'Return':
+                self.attempt_register()

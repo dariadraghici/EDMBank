@@ -3,6 +3,7 @@ from tkinter import messagebox
 from EDMBank_register import EDMBankRegister
 from EDMBank_keyboard import AlphaNumericKeyboard
 from services.bank_service import BankService
+from ui_utils import UIHelper
 from PIL import Image, ImageTk
 import os
 
@@ -35,6 +36,8 @@ class EDMBankLogin:
         self.main.geometry(f"{initial_width}x{initial_height}+{x}+{y}")
         self.main.minsize(300, 500)
         self.main.configure(bg="#354f52")
+
+        self.ui = UIHelper(initial_width, initial_height)
 
         # password and field state
         self.correct_password = "000000"
@@ -79,8 +82,8 @@ class EDMBankLogin:
             # load and resize the image
             original_image = Image.open(image_path)
             
-            # using a fixed width of 400px for the logo
-            target_width = 400 
+            # using a proportional width for the logo (50% of screen width)
+            target_width = self.ui.w_pct(50)
             aspect_ratio = original_image.height / original_image.width
             target_height = int(target_width * aspect_ratio)
 
@@ -92,57 +95,57 @@ class EDMBankLogin:
 
             # create a Label to display the image
             logo_label = tk.Label(self.main_container, image=self.logo_image, bg="#354f52")
-            logo_label.pack(pady=(50, 30))
+            logo_label.pack(pady=(self.ui.h_pct(2), self.ui.h_pct(2)))
 
         except FileNotFoundError:
             # fallback in case the image is not found
             logo_label = tk.Label(self.main_container, text="EDM Bank", 
-                                 font=('Arial', 40, 'bold'), bg="#354f52", fg="white")
-            logo_label.pack(pady=(50, 30))
+                                 font=self.ui.get_font('Arial', 40, 'bold'), bg="#354f52", fg="white")
+            logo_label.pack(pady=(self.ui.h_pct(5), self.ui.h_pct(3)))
             messagebox.showwarning("Warning", "Logo image 'logoo.png' not found. Using text fallback.", parent=self.main)
         except Exception as e:
             # fallback for other errors (e.g., PIL not installed)
             logo_label = tk.Label(self.main_container, text="EDM Bank", 
-                                 font=('Arial', 40, 'bold'), bg="#354f52", fg="white")
-            logo_label.pack(pady=(50, 30))
+                                 font=self.ui.get_font('Arial', 40, 'bold'), bg="#354f52", fg="white")
+            logo_label.pack(pady=(self.ui.h_pct(5), self.ui.h_pct(3)))
             messagebox.showwarning("Warning", f"Could not load logo: {e}. Using text fallback.", parent=self.main)
 
         # username frame
         username_frame = tk.Frame(self.main_container, bg="#354f52")
-        username_frame.pack(pady=40, fill='x', padx=50)
-        tk.Label(username_frame, text="Username:", font=('Tex Gyre Chorus', 40), 
+        username_frame.pack(pady=self.ui.h_pct(2), fill='x', padx=self.ui.w_pct(9))
+        tk.Label(username_frame, text="Username:", font=self.ui.get_font('Tex Gyre Chorus', 40), 
                  bg="#354f52", fg="white").pack(anchor='w')
         
         # type username box
-        self.username_entry = tk.Entry(username_frame, font=('Courier', 25), 
+        self.username_entry = tk.Entry(username_frame, font=self.ui.get_font('Courier', 25), 
                                        bg='#2f3e46', fg='white', relief='flat')
-        self.username_entry.pack(fill='x', pady=(10, 0), ipady=8)
+        self.username_entry.pack(fill='x', pady=(self.ui.h_pct(1), 0), ipady=self.ui.h_pct(0.8))
         
         # bind FocusIn to show alphanumeric keyboard
         self.username_entry.bind("<FocusIn>", lambda e: self.set_active_field('username'))
         
         # Enter Password for the box
         password_display_frame = tk.Frame(self.main_container, bg="#354f52")
-        password_display_frame.pack(pady=30, fill='x', padx=50)
-        tk.Label(password_display_frame, text="Enter Password:", font=('Tex Gyre Chorus', 40), 
+        password_display_frame.pack(pady=self.ui.h_pct(2), fill='x', padx=self.ui.w_pct(9))
+        tk.Label(password_display_frame, text="Enter Password:", font=self.ui.get_font('Tex Gyre Chorus', 40), 
                  bg="#354f52", fg="white").pack(anchor='w')
         # password display (shows • for each entered digit)
         self.password_display = tk.Label(password_display_frame, text="", 
-                                         font=('Arial', 24, 'bold'), bg="#2f3e46", 
+                                         font=self.ui.get_font('Arial', 24, 'bold'), bg="#2f3e46", 
                                          fg="#cad2c5", width=15, height=2)
-        self.password_display.pack(fill='x', pady=(10, 0))
+        self.password_display.pack(fill='x', pady=(self.ui.h_pct(1), 0))
         
         # bind click to show numeric keypad
         self.password_display.bind("<Button-1>", lambda e: self.set_active_field('password'))
         
         # initialize alphanumeric keyboard (must be done after username_entry is created)
-        self.alphanum_keyboard = AlphaNumericKeyboard(self.alphanum_frame, self.username_entry)
+        self.alphanum_keyboard = AlphaNumericKeyboard(self.alphanum_frame, self.username_entry, self.ui)
         
         # register button added BEFORE the keypad frame
         register_btn = tk.Button(self.main_container, text="Don't have an account? Register here", 
-                                 font=('Courier', 20, 'bold'), bg="#354f52", fg="white", 
+                                 font=self.ui.get_font('Courier', 20, 'bold'), bg="#354f52", fg="white", 
                                  relief='flat', command=self.open_register_window)
-        register_btn.pack(pady=(20,200))
+        register_btn.pack(pady=(self.ui.h_pct(2), self.ui.h_pct(5)))
 
     # --------------------------------------------------------------------------
  
@@ -203,22 +206,22 @@ class EDMBankLogin:
                 bg_color = '#588157'
                 fg_color = '#cad2c5'
                 command = self.check_password
-                font_style = ('Courier', 27, 'bold')
+                font_style = self.ui.get_font('Courier', 27, 'bold')
             elif text == '⌫':
                 bg_color = '#6f1d1b'
                 fg_color = '#cad2c5'
                 command = self.clear_password
-                font_style = ('Courier', 27, 'bold')
+                font_style = self.ui.get_font('Courier', 27, 'bold')
             else:
                 bg_color = '#84a98c'
                 fg_color = '#2f3e46'
                 command = lambda x=text: self.add_digit(x)
-                font_style = ('Courier', 27, 'bold')
+                font_style = self.ui.get_font('Courier', 27, 'bold')
             
             btn = tk.Button(parent, text=text, font=font_style,
                             bg=bg_color, fg=fg_color, relief='flat',
                             command=command)
-            btn.grid(row=row, column=col, padx=5, pady=5, sticky='nsew')
+            btn.grid(row=row, column=col, padx=self.ui.w_pct(1), pady=self.ui.h_pct(0.5), sticky='nsew')
     
     # --------------------------------------------------------------------------
 
