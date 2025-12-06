@@ -124,9 +124,24 @@ class Database:
         doc_ref.delete()
 
     def modify_user(self, user: User):
-        """A simple first-step method to modify any user field in the database."""
-        self.delete_user(user.credentials.username)
-        self.add_user(user)
+        """Update existing user fields safely."""
+        user_data = {
+            "Name": user.credentials.username,
+            "Password_hash": user.credentials.password,
+            "Card_Number": user.card.number,
+            "CVV": user.card.cvv,
+            "Expiry_date": user.card.expiry_date,
+            "Sold": user.balance,
+            "Email": user.credentials.email,
+            "Iban": user.card.IBAN,
+            "History": self.history_to_databse_format(user.payment_history)
+        }
+        self.db.collection("Users").document(user.credentials.username).update(user_data)
+
+    def listen_to_user(self, username, callback):
+        """Listen to changes on a user document."""
+        doc_ref = self.db.collection("Users").document(username)
+        return doc_ref.on_snapshot(callback)
 
     def get_user(self, username):
         doc_ref = self.db.collection("Users").document(username)
@@ -136,7 +151,21 @@ class Database:
             raise AccountNotFoundError(f"Account '{username}' does not exist.")
         
         data = doc.to_dict()
+        return self._create_user_from_data(username, data)
 
+    def get_user_by_iban(self, iban: str) -> User:
+        users_ref = self.db.collection("Users")
+        query = users_ref.where(filter=FieldFilter("Iban", "==", iban)).get()
+        
+        if not query:
+            raise AccountNotFoundError(f"Account with IBAN '{iban}' does not exist.")
+        
+        doc = query[0]
+        data = doc.to_dict()
+        username = doc.id # or data.get("Name")
+        return self._create_user_from_data(username, data)
+
+    def _create_user_from_data(self, username, data):
         email = data.get("Email")
         balance = data.get("Sold")
         hashed_pass = data.get("Password_hash")

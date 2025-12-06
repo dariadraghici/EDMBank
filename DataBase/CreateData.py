@@ -25,7 +25,11 @@ for i in range(50):
     email = UserName + "@gmail.com"
     email = email.replace(" ","")
     CardDigit = random.randrange(10**15,10**16-1)
-    IBAN = "IBANEDM" + random.randrange(10**29, 10**30-1)
+    
+    # IBAN generation (24 chars)
+    check_digits = f"{random.randrange(10, 99)}"
+    account_digits = f"{random.randrange(10**15, 10**16)}"
+    IBAN = f"RO{check_digits}EDMB{account_digits}"
 
     CVV = random.randrange(10**2,10**3)
 

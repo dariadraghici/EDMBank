@@ -43,7 +43,7 @@ def restart_app(current_root, bank_service):
     run_login_app(new_root, bank_service)
     new_root.mainloop()
 
-def start_main_app(username, login_window, bank_service: BankService):
+def start_main_app(user, login_window, bank_service: BankService):
     # get the position and size of the login window before destroying it
     login_window.update_idletasks()
     x = login_window.winfo_x()
@@ -63,8 +63,8 @@ def start_main_app(username, login_window, bank_service: BankService):
     main_root.minsize(300, 500)
     
     # start the main app, passing the restart_app function as the logout callback
-    app = EDMBankApp(main_root, relauch_login_callback=lambda: restart_app(main_root, bank_service))
-    app.logged_in_user = username
+    app = EDMBankApp(main_root, current_user=user, bank_service=bank_service, relauch_login_callback=lambda: restart_app(main_root, bank_service))
+    
     # update the card display for the logged in user
     app.update_card_display()
     main_root.mainloop()

@@ -287,6 +287,11 @@ class EDMBankRegister:
 
         user = User(credentials, 0, pay_history, user_card)
         self.bank_service.add_user(user)
+        
+        # Refresh user from DB to ensure we have the hashed password
+        # This prevents overwriting the hash with plain text if modify_user is called later
+        user = self.bank_service.get_user(username)
+
         messagebox.showinfo("Registration Successful", 
                             f"Account created for {username} ({email}). Proceeding to main app.", 
                             parent=self.main)
@@ -303,7 +308,7 @@ class EDMBankRegister:
         # destroy registration window 
         self.main.destroy() 
         # call the success callback (which is start_main_app from launcher)
-        self.on_success_callback(username.upper(), self.login_window, self.bank_service)
+        self.on_success_callback(user, self.login_window, self.bank_service)
 
     def back_to_login(self):
         # capture size/position of registration window
