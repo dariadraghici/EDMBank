@@ -266,28 +266,12 @@ class EDMBankLogin:
         
         if self.bank_service.checkUserLogin(username, password):
             self.main.withdraw()
-            self.on_success_callback(username, self.main, self.bank_service)
+            user = self.bank_service.get_user(username)
+            self.on_success_callback(user, self.main, self.bank_service)
         else:
             messagebox.showerror("Login Failed", "Incorrect username or password!", parent=self.main)
             self.clear_password()
             self.set_active_field('password')
-        # # if password is correct call the success callback
-        # if self.entered_password == self.correct_password:
-        #     # get username in uppercase without leading/trailing spaces
-        #     username = self.username_entry.get().strip().upper()
-        #     # if username written
-        #     if username:
-        #         self.main.withdraw()  # hide login window
-        #         self.on_success_callback(username, self.main, self.bank_service)
-        #     else:
-        #         messagebox.showerror("Error", "Please enter a username!", parent=self.main)
-        #         # If error, re-show username keyboard
-        #         self.set_active_field('username')
-        # else:
-        #     messagebox.showerror("Login Failed", "Incorrect password or username! Please try again.", parent=self.main)
-        #     self.clear_password()
-        #     # If error, re-show password keyboard
-        #     self.set_active_field('password')
  
     # --------------------------------------------------------------------------
 

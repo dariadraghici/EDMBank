@@ -29,8 +29,11 @@ class Card :
         expiry_date = f"{rand_month:02d}/{rand_year % 100:02d}"
 
         # IBAN
-        iban_number = str(random.randrange(10**29, 10**30))
-        IBAN = "IBANEDM" + iban_number
+        # Generating a 24-character IBAN (RO + 2 check digits + 4 bank code + 16 account digits)
+        # Bank Code for EDM Bank: EDMB
+        check_digits = f"{random.randrange(10, 99)}"
+        account_digits = f"{random.randrange(10**15, 10**16)}" # 16 digits
+        IBAN = f"RO{check_digits}EDMB{account_digits}"
 
         return Card(number, cvv, expiry_date, IBAN)
 

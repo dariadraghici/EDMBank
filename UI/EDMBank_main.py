@@ -8,12 +8,17 @@ import locale
 from EDMBank_profile import EDMBankProfile 
 from EDMBank_settings import EDMBankSettings 
 from ui_utils import UIHelper
+from user_management.user import User
+from services.bank_service import BankService
+from exceptions import *
 
 class EDMBankApp:
-    def __init__(self, main, relauch_login_callback=None): 
+    def __init__(self, main, current_user: User, bank_service: BankService, relauch_login_callback=None): 
         self.main = main 
         self.main.title("EDM Bank")
-        self.relauch_login_callback = relauch_login_callback 
+        self.relauch_login_callback = relauch_login_callback
+        self.current_user = current_user
+        self.bank_service = bank_service
 
         screen_width = main.winfo_screenwidth()
         screen_height = main.winfo_screenheight()
@@ -34,26 +39,28 @@ class EDMBankApp:
         
         # Initialize UI Helper
         self.ui = UIHelper(initial_width, initial_height)
-
-        # --- MODIFICATION 1: Store fixed center coordinates for popups ---
-        # Calculate the absolute center point of the main window on the screen
-        self.center_x = x + initial_width // 2
-        self.center_y = y + initial_height // 2
-        # ------------------------------------------------------------------
+        
+        # Store last dimensions to prevent unnecessary updates during moves
+        self.last_width = initial_width
+        self.last_height = initial_height
         
         self.main.minsize(300, 500)
         self.main.configure(bg="#354f52")
 
         self.sold_visible = False
         self.card_data_visible = False
-        self.sold_amount = "1.250,00 RON"
+    
         self.is_large_screen = False
-        self.logged_in_user = "POPESCU IRIS-MARIA"
+        self.logged_in_user = current_user.credentials.username
         self.logged_in_user_email = f"{self.logged_in_user.lower().replace(' ', '').replace('-', '')}@edmbank.com"
         
-        self.card_number = self.generate_card_number()
-        self.card_cvv = f"{random.randint(0,999):03d}"
-        self.card_expiry = "02/26"
+        self.card_number = str(self.current_user.card.number)
+        self.card_cvv = str(self.current_user.card.cvv)
+        self.card_expiry = self.current_user.card.expiry_date
+        self.card_iban = self.current_user.card.IBAN
+        
+        # Ensure balance is formatted correctly from the start
+        self.sold_amount = self.float_to_balance(float(self.current_user.balance))
         
         self.nav_images = []  
         self.top_logo_image = None
@@ -73,7 +80,50 @@ class EDMBankApp:
 
         self.main.bind('<Configure>', self.on_resize)
 
-    # --------------------------------------------------------------------------
+        # Setup real-time listener
+        self.setup_realtime_listener()
+
+    
+    def setup_realtime_listener(self):
+        def on_snapshot(doc_snapshot, changes, read_time):
+            for doc in doc_snapshot:
+                if doc.exists:
+                    data = doc.to_dict()
+                    # Schedule UI update on main thread
+                    self.main.after(0, self.handle_user_update, data)
+
+        # Keep a reference to the listener
+        self.user_listener = self.bank_service.listen_to_user_changes(self.logged_in_user, on_snapshot)
+
+    def handle_user_update(self, data):
+        # Update balance
+        if "Sold" in data:
+            new_balance = data.get("Sold")
+            self.current_user.balance = new_balance
+            self.sold_amount = self.float_to_balance(float(new_balance))
+            self.update_balance_display()
+
+        # Update History and Notify
+        if "History" in data:
+            new_history_strings = data.get("History")
+            # Convert to object to update local state
+            new_history_obj = self.bank_service.db.database_to_class_format(new_history_strings)
+            
+            # Check if we have a new transaction
+            old_len = len(self.current_user.payment_history.history)
+            new_len = len(new_history_obj.history)
+            
+            if new_len > old_len:
+                # Get the last payment
+                last_payment = new_history_obj.history[-1]
+                # Check if I am the receiver
+                if last_payment.receiver == self.logged_in_user:
+                     self.show_message("Money Received!", 
+                                       f"You received {self.float_to_balance(last_payment.amount)} from {last_payment.sender}!", 
+                                       "info")
+            
+            # Update local user history
+            self.current_user.payment_history = new_history_obj
 
     def show_message(self, title, message, message_type="info"):
         
@@ -86,32 +136,37 @@ class EDMBankApp:
 
     # --------------------------------------------------------------------------
 
-    def generate_card_number(self):
-        digits = ''.join([str(random.randint(0, 9)) for _ in range(16)])
-        return digits
-
-    # --------------------------------------------------------------------------
-
     def format_card_number(self, number, show_full=False):
         if show_full:
             return ' '.join([number[i:i+4] for i in range(0, 16, 4)])
         else:
             return f"•••• •••• •••• {number[-4:]}"
 
-    # --------------------------------------------------------------------------
-
+    
     def on_resize(self, event):
+        # Only handle the main window event
+        if str(event.widget) != '.':
+            return
+
         window_width = self.main.winfo_width()
         window_height = self.main.winfo_height()
         
-        if str(event.widget) == '.':
-            self.main.unbind('<Configure>')
+        # Check if dimensions actually changed
+        if window_width == self.last_width and window_height == self.last_height:
+            return
+            
+        # Update stored dimensions
+        self.last_width = window_width
+        self.last_height = window_height
+        
+        self.main.unbind('<Configure>')
         
         try:
             self.ui.update_dimensions(window_width, window_height)
             
-            if hasattr(self, 'buttons_frame'):
-                if hasattr(self, 'card_frame'):
+            # Check if widgets exist before trying to manipulate them
+            if hasattr(self, 'buttons_frame') and self.buttons_frame.winfo_exists():
+                if hasattr(self, 'card_frame') and self.card_frame.winfo_exists():
                     if window_width > 600 and not self.is_large_screen:
                         self.switch_to_desktop_layout()
                         self.is_large_screen = True
@@ -124,12 +179,12 @@ class EDMBankApp:
                             self.switch_to_desktop_layout()
                         else:
                             self.switch_to_mobile_layout()
+        except tk.TclError:
+            pass # Ignore errors if widgets are destroyed during resize
         finally:
-             if str(event.widget) == '.':
-                 self.main.bind('<Configure>', self.on_resize)
+             self.main.bind('<Configure>', self.on_resize)
 
-    # --------------------------------------------------------------------------
-
+    
     def update_card_background(self, rebind=True):
         if rebind:
             self.main.unbind('<Configure>')
@@ -169,8 +224,7 @@ class EDMBankApp:
         if rebind:
             self.main.bind('<Configure>', self.on_resize)
 
-    # --------------------------------------------------------------------------
-
+    
     def switch_to_desktop_layout(self):
         self.main.unbind('<Configure>')
 
@@ -180,7 +234,7 @@ class EDMBankApp:
         buttons_data = [
             ("$ TRANSFER", self.transfer),
             ("⇄ IBAN TRANSFER", self.transfer_iban),
-            ("⎙ TRANSACTION HISTORY", self.transaction_history),
+            ("⎙ TRANSACTION HISTORY", self.show_history_popup),
             ("⤾ ADD MONEY", self.add_money),
             ("ⓘ SHOW CARD DETAILS", self.toggle_card_data),
             ("✎ MAKE PAYMENT", self.make_payment),
@@ -197,8 +251,7 @@ class EDMBankApp:
         self.update_card_display()
         self.update_card_background() 
     
-    # --------------------------------------------------------------------------
-
+    
     def switch_to_mobile_layout(self):
         self.main.unbind('<Configure>')
 
@@ -211,7 +264,7 @@ class EDMBankApp:
         buttons_data = [
             ("$ TRANSFER", self.transfer, 0, 0),
             ("⇄ IBAN TRANSFER", self.transfer_iban, 0 , 1),
-            ("⎙ TRANSACTION HISTORY", self.transaction_history, 1, 0),
+            ("⎙ TRANSACTION HISTORY", self.show_history_popup, 1, 0),
             ("⤾ ADD MONEY", self.add_money, 1, 1),
             ("ⓘ SHOW CARD DETAILS", self.toggle_card_data, 2, 0),
             ("✎ MAKE PAYMENT", self.make_payment, 2, 1),
@@ -228,18 +281,17 @@ class EDMBankApp:
         self.update_card_display()
         self.update_card_background() 
 
-    # --------------------------------------------------------------------------
-
+    
     def update_card_display(self):
-        display_number = self.format_card_number(self.card_number, self.card_data_visible)
+        display_number =  str(self.current_user.card.number)
+        display_number = " ".join(display_number[i:i+4] for i in range (0, len(display_number), 4))
+
         self.card_frame.itemconfig(self.text_number, text=display_number)
         
         if self.card_data_visible:
             self.card_frame.itemconfig(self.text_holder, text=self.logged_in_user)
         else:
-            self.card_frame.itemconfig(self.text_holder, text="POPESCU IRINA-MARIA")
-
-    # --------------------------------------------------------------------------
+            self.card_frame.itemconfig(self.text_holder, text=self.logged_in_user)
 
     def create_top_menu(self):
         top_frame = tk.Frame(self.main_container, bg="#354f52", height=self.ui.h_pct(8))
@@ -304,7 +356,6 @@ class EDMBankApp:
                               height=1, command=self.logout_and_relaunch_login)
         login_btn.grid(row=0, column=2, sticky='e', padx=(self.ui.w_pct(2), 0))
 
-    # --------------------------------------------------------------------------
     def handle_dropdown_selection(self, event):
         # this function handles the selection from the main top-left dropdown menu.
         selected = self.dropdown_var.get()
@@ -323,8 +374,7 @@ class EDMBankApp:
         # reset the dropdown display text to 'Menu' after selection
         self.dropdown_var.set("Menu")
 
-    # --------------------------------------------------------------------------
-
+    
     def create_main_content(self):
         self.content_frame = tk.Frame(self.main_container, bg="#cad2c5")
         self.content_frame.grid(row=1, column=0, sticky='nsew', padx=20, pady=10)
@@ -332,8 +382,7 @@ class EDMBankApp:
         self.content_frame.grid_columnconfigure(0, weight=1)
         self.show_home_view()
         
-    # --------------------------------------------------------------------------
-
+    
     def show_home_view(self):
         for widget in self.content_frame.winfo_children():
             widget.destroy()
@@ -377,7 +426,7 @@ class EDMBankApp:
         self.text_number = self.card_frame.create_text(0, 0, text=self.format_card_number(self.card_number), 
                                                          font=self.ui.get_font('Arial', 14, 'bold'), fill='white', anchor='center')
         
-        self.text_holder = self.card_frame.create_text(0, 0, text="POPESCU IRINA-MARIA", 
+        self.text_holder = self.card_frame.create_text(0, 0, text=self.logged_in_user, 
                                                          font=self.ui.get_font('Arial', 10), fill='white', anchor='sw')
         
         self.text_expiry = self.card_frame.create_text(0, 0, text=self.card_expiry, 
@@ -493,7 +542,8 @@ class EDMBankApp:
                               f"Card Number: {self.format_card_number(self.card_number, True)}\n"
                               f"Holder: {self.logged_in_user}\n"
                               f"Expiry Date: {self.card_expiry}\n"
-                              f"CVV: {self.card_cvv}\n\n"
+                              f"CVV: {self.card_cvv}\n"
+                              f"IBAN: {self.card_iban}\n"
                               "⚠️ Keep this information safe!",
                               "info")
         else:
@@ -507,6 +557,18 @@ class EDMBankApp:
         else:
              self.show_in_app_login() 
             
+    def get_center_coordinates(self, popup_width, popup_height):
+        self.main.update_idletasks()
+        main_x = self.main.winfo_x()
+        main_y = self.main.winfo_y()
+        main_width = self.main.winfo_width()
+        main_height = self.main.winfo_height()
+        
+        x = main_x + (main_width // 2) - (popup_width // 2)
+        y = main_y + (main_height // 2) - (popup_height // 2)
+        
+        return int(x), int(y)
+
     def show_in_app_login(self):
         login_window = tk.Toplevel(self.main)
         login_window.title("Login EDM Bank")
@@ -517,9 +579,7 @@ class EDMBankApp:
         login_window.transient(self.main) 
         login_window.grab_set() 
 
-        # fixed center coordinates for this toplevel
-        x = self.center_x - login_window_width // 2
-        y = self.center_y - login_window_height // 2
+        x, y = self.get_center_coordinates(login_window_width, login_window_height)
         login_window.geometry(f"+{x}+{y}")
         login_window.resizable(False, False)
 
@@ -564,8 +624,78 @@ class EDMBankApp:
     def transfer_iban(self):
         self.show_iban_transfer_popup()
 
-    def transaction_history(self):
-        self.show_message("Transaction History", "Your transaction history", "info")
+    def show_history_popup(self):
+        history_window = tk.Toplevel(self.main)
+        history_window.title("Transaction History")
+        history_window.configure(bg='#cad2c5')
+        
+        popup_width = 600
+        popup_height = 500
+        
+        x, y = self.get_center_coordinates(popup_width, popup_height)
+        
+        history_window.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
+        history_window.grab_set()
+        
+        tk.Label(history_window, text="Recent Transactions", font=('Tex Gyre Chorus', 20, 'bold'),
+                 bg="#c6cec1", fg="#486e72").pack(pady=15)
+
+        # Frame for Treeview
+        tree_frame = tk.Frame(history_window, bg='#cad2c5')
+        tree_frame.pack(fill='both', expand=True, padx=20, pady=10)
+
+        # Scrollbar
+        scrollbar = ttk.Scrollbar(tree_frame)
+        scrollbar.pack(side='right', fill='y')
+
+        # Treeview
+        columns = ("type", "details", "amount")
+        tree = ttk.Treeview(tree_frame, columns=columns, show='headings', 
+                            yscrollcommand=scrollbar.set, height=10)
+        
+        # Configure columns
+        tree.heading("type", text="Type")
+        tree.heading("details", text="Details")
+        tree.heading("amount", text="Amount")
+        
+        tree.column("type", width=100, anchor='center')
+        tree.column("details", width=250, anchor='w')
+        tree.column("amount", width=150, anchor='e')
+        
+        scrollbar.config(command=tree.yview)
+        tree.pack(side='left', fill='both', expand=True)
+
+        # Style for rows
+        tree.tag_configure('sent', foreground='#d62828') # Red for sent
+        tree.tag_configure('received', foreground='#2a9d8f') # Green for received
+
+        # Populate
+        history = self.current_user.payment_history.history
+        
+        if not history:
+            tree.insert("", "end", values=("No transactions", "-", "-"))
+        else:
+            # Show newest first
+            for payment in reversed(history):
+                amount_val = payment.amount
+                amount_str = self.float_to_balance(amount_val)
+                
+                if payment.sender == self.logged_in_user:
+                    trans_type = "SENT ➔"
+                    details = f"To: {payment.receiver}"
+                    display_amount = f"- {amount_str}"
+                    tag = 'sent'
+                else:
+                    trans_type = "RECEIVED ➔"
+                    details = f"From: {payment.sender}"
+                    display_amount = f"+ {amount_str}"
+                    tag = 'received'
+                
+                tree.insert("", "end", values=(trans_type, details, display_amount), tags=(tag,))
+
+        # Close button
+        tk.Button(history_window, text="CLOSE", font=('Arial', 12, 'bold'),
+                  bg='#354f52', fg='white', command=history_window.destroy, width=15).pack(pady=20)
 
     def add_money(self):
         # create the Toplevel window
@@ -576,9 +706,7 @@ class EDMBankApp:
         popup_width = 400
         popup_height = 400
         
-        # center the popup using the stored fixed center coordinates
-        x = self.center_x - popup_width // 2
-        y = self.center_y - popup_height // 2
+        x, y = self.get_center_coordinates(popup_width, popup_height)
         
         add_money_window.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
         add_money_window.resizable(False, False)
@@ -587,7 +715,6 @@ class EDMBankApp:
         main_frame = tk.Frame(add_money_window, bg='#cad2c5')
         main_frame.pack(fill='both', expand=True, padx=20, pady=10)
 
-        # ----------------------------------------------------------------------
         def create_input_field(parent, label_text, is_secure=False):
             tk.Label(parent, text=label_text, font=('Tex Gyre Chorus', 16, 'bold'),
                      bg='#cad2c5', fg='#354f52').pack(pady=(5, 2), anchor='w')
@@ -597,7 +724,6 @@ class EDMBankApp:
                 entry.config(show='*')
             entry.pack(pady=(0, 10), fill='x')
             return entry
-        # ----------------------------------------------------------------------
         
         # input fields
         self.entry_card_number = create_input_field(main_frame, "CARD NUMBER:")
@@ -648,12 +774,15 @@ class EDMBankApp:
                     self.show_message("Error", "Deposit amount must be positive.", "error")
                     return
                 
+                # Perform deposit
+                self.bank_service.add_money(self.current_user, transfer_amount)
+                
+                # Update UI
+                self.sold_amount = self.float_to_balance(self.current_user.balance)
+                self.update_balance_display()
+                
                 # close popup
                 add_money_window.destroy()
-                current_balance = self.balance_to_float(self.sold_amount)
-                new_balance = current_balance + transfer_amount
-                self.sold_amount = self.float_to_balance(new_balance)
-                self.update_balance_display()
 
                 # confirmation
                 self.show_message("Deposit Successful", 
@@ -664,6 +793,8 @@ class EDMBankApp:
                 
             except ValueError:
                 self.show_message("Error", "Invalid amount entered. Please use numbers.", "error")
+            except Exception as e:
+                self.show_message("Error", f"Deposit failed: {e}", "error")
 
         # DEPOSIT button
         deposit_btn = tk.Button(button_frame, text="DEPOSIT", font=('Arial', 12, 'bold'),
@@ -721,9 +852,8 @@ class EDMBankApp:
     def update_balance_display(self):
         """Updates the label that shows the current balance."""
         if hasattr(self, 'sold_label'):
-             self.sold_label.config(text=self.sold_amount)
+            self.sold_label.config(text=self.sold_amount)
     
-# --------------------------------------------------------------------------
     def show_transfer_popup(self):
         transfer_window = tk.Toplevel(self.main)
         transfer_window.title("Fast Transfer")
@@ -731,8 +861,7 @@ class EDMBankApp:
         
         popup_width = 350
         popup_height = 250
-        x = self.center_x - popup_width // 2
-        y = self.center_y - popup_height // 2
+        x, y = self.get_center_coordinates(popup_width, popup_height)
         
         transfer_window.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
         transfer_window.resizable(False, False)
@@ -757,40 +886,39 @@ class EDMBankApp:
         button_frame.pack(pady=10)
         
         def attempt_transfer():
-            username = username_entry.get().strip()
+            receiver = username_entry.get().strip()
             amount = sum_entry.get().strip()
-            
-            if not username or not amount:
+
+            if not receiver or not amount:
                 self.show_message("Error", "Please fill in both fields.", "warning")
                 return
 
             try:
-                # Simple validation for amount
-                transfer_amount = float(amount.replace(',', '.')) 
-                
-                # Check 1: Is the amount valid?
+                transfer_amount = float(amount.replace(',', '.'))
                 if transfer_amount <= 0:
                     self.show_message("Error", "Transfer amount must be positive.", "error")
                     return
-                
-                # --- EXECUTE SUBTRACTION (Simplified without error handling) ---
-                current_balance = self.balance_to_float(self.sold_amount)
-                
-                if transfer_amount > current_balance:
-                    self.show_message("Error", "Insufficient funds for this transfer.", "error")
-                    return
-                
-                new_balance = current_balance - transfer_amount
-                self.sold_amount = self.float_to_balance(new_balance)
-                self.update_balance_display()
 
-                # Close the pop-up and show confirmation
+                self.bank_service.transfer_money(self.current_user.credentials.username, receiver, transfer_amount)
+                self.current_user = self.bank_service.refresh_user(self.current_user)
+
+                # Update UI
+                self.sold_amount = self.float_to_balance(self.current_user.balance)
+                self.update_balance_display()
+                
                 transfer_window.destroy()
-                self.show_message("Success", 
-                                  f"Transferring {transfer_amount:,.2f} RON to {username}...", 
-                                  "info")
+                self.show_message("Success", f"Transferring {transfer_amount:,.2f} RON to {receiver}...", "info")
+
             except ValueError:
                 self.show_message("Error", "Invalid amount entered. Please use numbers.", "error")
+            except AccountNotFoundError:
+                self.show_message("Error", "Account not found.", "error")
+            except InsufficientFundsError:
+                self.show_message("Error", "Insufficient funds.", "error")
+            except Exception as e:
+                self.show_message("Error", f"Transfer failed: {e}", "error")
+            
+
         
         # SEND Button
         send_btn = tk.Button(button_frame, text="SEND", font=('Arial', 12, 'bold'),
@@ -808,8 +936,7 @@ class EDMBankApp:
         # Romanian IBANs are 24 characters long and start with 'RO'
         return len(iban) == 24 and iban.startswith("RO")
     
-    # --------------------------------------------------------------------------
-
+    
     def show_iban_transfer_popup(self):
         transfer_window = tk.Toplevel(self.main)
         transfer_window.title("IBAN Transfer")
@@ -818,8 +945,7 @@ class EDMBankApp:
         popup_width = 380
         popup_height = 280
         
-        x = self.center_x - popup_width // 2
-        y = self.center_y - popup_height // 2
+        x, y = self.get_center_coordinates(popup_width, popup_height)
         
         transfer_window.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
         transfer_window.resizable(False, False)
@@ -862,14 +988,11 @@ class EDMBankApp:
                     self.show_message("Error", "Transfer amount must be positive.", "error")
                     return
                 
-                current_balance = self.balance_to_float(self.sold_amount)
+                # Perform IBAN transfer
+                self.bank_service.transfer_iban(self.current_user, iban, transfer_amount)
                 
-                if transfer_amount > current_balance:
-                    self.show_message("Error", "Insufficient funds for this transfer.", "error")
-                    return
-                
-                new_balance = current_balance - transfer_amount
-                self.sold_amount = self.float_to_balance(new_balance)
+                # Update UI
+                self.sold_amount = self.float_to_balance(self.current_user.balance)
                 self.update_balance_display()
 
                 transfer_window.destroy()
@@ -878,6 +1001,12 @@ class EDMBankApp:
                                   "info")
             except ValueError:
                 self.show_message("Error", "Invalid amount entered. Please use numbers.", "error")
+            except InsufficientFundsError:
+                self.show_message("Error", "Insufficient funds for this transfer.", "error")
+            except AccountNotFoundError:
+                self.show_message("Error", "No account found with this IBAN.", "error")
+            except Exception as e:
+                self.show_message("Error", f"Transfer failed: {e}", "error")
 
         # SEND Button
         send_btn = tk.Button(button_frame, text="SEND", font=('Arial', 12, 'bold'),
@@ -888,9 +1017,3 @@ class EDMBankApp:
         exit_btn = tk.Button(button_frame, text="EXIT", font=('Arial', 12),
                               bg='#354f52', fg='white', command=transfer_window.destroy, width=10)
         exit_btn.pack(side='left', padx=10)
-
-# --- Application Launch ---
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = EDMBankApp(root) 
-    root.mainloop()
