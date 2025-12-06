@@ -460,8 +460,8 @@ class EDMBankApp:
             try:
                 # initialize EDMBankProfile
                 EDMBankProfile(self.content_frame, 
-                               self.logged_in_user, 
-                               self.logged_in_user_email,
+                               self.current_user, 
+                               self.bank_service,
                                self.switch_view,
                                self.ui) # pass self.switch_view as the callback
             except Exception as e:

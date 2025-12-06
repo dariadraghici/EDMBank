@@ -3,33 +3,24 @@ from tkinter import ttk, messagebox
 from PIL import Image, ImageTk 
 import os
 import re 
-from EDMBank_keyboard import AlphaNumericKeyboard 
 
 class EDMBankProfile:
-    def __init__(self, parent_frame, logged_in_user, logged_in_email, switch_view_callback, ui_helper):
+    def __init__(self, parent_frame, current_user, bank_service, switch_view_callback, ui_helper, app_instance=None):
         self.parent_frame = parent_frame
-        self.logged_in_user = logged_in_user
-        self.logged_in_email = logged_in_email 
+        self.user = current_user
+        self.bank_service = bank_service
         self.switch_view_callback = switch_view_callback
         self.ui = ui_helper
+        self.app_instance = app_instance
         
-        # initial data
-        # self.last_name, self.first_name = self._split_name(self.logged_in_user)
-        self.current_password = "old_password123"
-        
+       
         # tkinter variables for input fields
-        self.username_var = tk.StringVar(value=self.logged_in_user)
-        self.email_var = tk.StringVar(value=self.logged_in_email)
+        self.username_var = tk.StringVar(value=self.user.credentials.username)
+        self.email_var = tk.StringVar(value=self.user.credentials.email)
         
         # variables for image
         self.profile_image_path = "profile_placeholder.png" 
         self.profile_photo_tk = None 
-        
-        # keyboard variables
-        self.username_entry = None
-        self.keyboard_container = None
-        self.keyboard_instance = None
-        self.keyboard_visible = False
         
         self._set_styles()
         self.create_profile_view()
@@ -85,11 +76,10 @@ class EDMBankProfile:
         fields_frame.grid(row=0, column=1, rowspan=2, padx=self.ui.w_pct(1), sticky='nsew')
         fields_frame.grid_columnconfigure(1, weight=1)
         
-        self.username_entry = self._create_field(fields_frame, "Username:", self.username_var, 0)
-        self.username_entry.bind('<FocusIn>', lambda e: self.toggle_keyboard_visibility(self.username_entry))
+        self.username_entry = self._create_field(fields_frame, "Username:", self.username_var, 0, readonly=True)
         self.username_entry.config(font=self.ui.get_font("Courier", 16))
 
-        # email is read-only, no keyboard binding
+        # email is read-only
         self._create_field(fields_frame, "Email:", self.email_var, 1, readonly=True).config(font=self.ui.get_font("Courier", 13))
         
         ttk.Button(fields_frame, text="Change Password", command=self.change_password_popup,
@@ -98,21 +88,8 @@ class EDMBankProfile:
         button_frame = tk.Frame(main_content, bg='#cad2c5')
         button_frame.pack(pady=self.ui.h_pct(2), fill='x')
         
-        ttk.Button(button_frame, text="SAVE CHANGES", command=self.save_changes,
-                   style='Action.TButton').pack(side='left', fill='x', expand=True, padx=self.ui.w_pct(1))
-        
         ttk.Button(button_frame, text="EXIT", command=self.exit_view,
                    style='Exit.TButton').pack(side='right', fill='x', expand=True, padx=self.ui.w_pct(1))
-        
-        # keyboard container (always at the bottom of the main content)
-        self.keyboard_container = tk.Frame(main_content, bg="#cad2c5")
-        self.keyboard_container.pack(fill='x', pady=(self.ui.h_pct(1), 0))
-
-        # initialize the keyboard instance (default target is username)
-        self.keyboard_instance = AlphaNumericKeyboard(self.keyboard_container, self.username_entry)
-        
-        # hide the keyboard initially
-        self.keyboard_container.pack_forget()
     
     # ------------------------------------------------------------------------------
 
@@ -153,11 +130,6 @@ class EDMBankProfile:
     # ------------------------------------------------------------------------------
 
     def change_password_popup(self):
-        
-        # hide keyboard when popup is active
-        if self.keyboard_visible:
-            self.keyboard_container.pack_forget()
-            self.keyboard_visible = False
             
         pwd_window = tk.Toplevel(self.parent_frame)
         pwd_window.title("Change Password")
@@ -187,11 +159,6 @@ class EDMBankProfile:
         new_pwd_entry = create_pwd_field(frame, "New Password:", 1)
         confirm_pwd_entry = create_pwd_field(frame, "Confirm New Password:", 2)
         
-        # add keyboard bindings for password fields in the Toplevel window
-        old_pwd_entry.bind('<FocusIn>', lambda e: self.toggle_keyboard_visibility(old_pwd_entry, use_password_keyboard=True, parent_window=pwd_window))
-        new_pwd_entry.bind('<FocusIn>', lambda e: self.toggle_keyboard_visibility(new_pwd_entry, use_password_keyboard=True, parent_window=pwd_window))
-        confirm_pwd_entry.bind('<FocusIn>', lambda e: self.toggle_keyboard_visibility(confirm_pwd_entry, use_password_keyboard=True, parent_window=pwd_window))
-
         # save password logic
         def save_new_password():
             old_pwd = old_pwd_entry.get()
@@ -202,25 +169,19 @@ class EDMBankProfile:
                 messagebox.showerror("Error", "Please fill in all fields.", parent=pwd_window)
                 return
 
-            if old_pwd != self.current_password:
-                messagebox.showerror("Error", "The current password entered is incorrect.", parent=pwd_window)
-                old_pwd_entry.delete(0, tk.END)
-                return
-            
-            if len(new_pwd) < 6:
-                messagebox.showerror("Error", "The new password must be at least 6 characters long.", parent=pwd_window)
-                return
-            
             if new_pwd != confirm_pwd:
                 messagebox.showerror("Error", "The new password and confirmation do not match.", parent=pwd_window)
                 return
-                
-            self.current_password = new_pwd
-            pwd_window.destroy()
-            # SHOW keyboard after popup is closed if the main window has focus
-            self.toggle_keyboard_visibility(None) 
-            messagebox.showinfo("Success", "Password successfully changed!", parent=self.parent_frame)
             
+            try:
+                self.bank_service.change_password(self.user, old_pwd, new_pwd)
+                messagebox.showinfo("Success", "Password successfully changed!", parent=self.parent_frame)
+                pwd_window.destroy()
+            except ValueError as e:
+                messagebox.showerror("Error", str(e), parent=pwd_window)
+                old_pwd_entry.delete(0, tk.END)
+            except Exception as e:
+                messagebox.showerror("Error", f"An error occurred: {e}", parent=pwd_window)
 
         button_frame = tk.Frame(frame, bg='#cad2c5')
         button_frame.grid(row=3, column=0, columnspan=2, pady=15)
@@ -230,51 +191,5 @@ class EDMBankProfile:
 
     # ------------------------------------------------------------------------------
 
-    def save_changes(self):
-        # hide keyboard on save
-        if self.keyboard_visible:
-            self.keyboard_container.pack_forget()
-            self.keyboard_visible = False
-            
-        new_username = self.username_var.get().strip()
-        
-        if not new_username:
-            messagebox.showerror("Error", "Username cannot be empty.", parent=self.parent_frame)
-            return
-            
-        # update user data (in a real app, this would be a database call)
-        self.logged_in_user = new_username
-        
-        messagebox.showinfo("Success", "Profile changes have been saved!", parent=self.parent_frame)
-        self.exit_view()
-
-    # ------------------------------------------------------------------------------
-
     def exit_view(self):
-        # hide keyboard on exit
-        if self.keyboard_visible:
-            self.keyboard_container.pack_forget()
-            self.keyboard_visible = False
-            
         self.switch_view_callback("home")
-    # ------------------------------------------------------------------------------
-    # keyboard visibility logic
-    def toggle_keyboard_visibility(self, target_widget, use_password_keyboard=False, parent_window=None):
-        if parent_window:
-            return
-
-        # check if a supported widget in the main view is being focused
-        supported_widgets = (self.username_entry,)
-        
-        if target_widget in supported_widgets:
-            # if the keyboard is hidden or the target has changed, show it and update target
-            if not self.keyboard_visible or self.keyboard_instance.target_entry != target_widget:
-                # update the keyboard's target entry
-                self.keyboard_instance.target_entry = target_widget 
-                self.keyboard_container.pack(fill='x', pady=(600, 0)) # use pack to show
-                self.keyboard_visible = True
-        else:
-            # if focus is elsewhere or lost, hide the keyboard
-            if self.keyboard_visible:
-                self.keyboard_container.pack_forget() # use pack_forget to hide
-                self.keyboard_visible = False
