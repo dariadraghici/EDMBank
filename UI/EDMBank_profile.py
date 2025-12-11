@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 from PIL import Image, ImageTk 
 import os
 import re 
+from ui_utils import get_resource_path
 
 class EDMBankProfile:
     def __init__(self, parent_frame, current_user, bank_service, switch_view_callback, ui_helper, app_instance=None):
@@ -19,7 +20,7 @@ class EDMBankProfile:
         self.email_var = tk.StringVar(value=self.user.credentials.email)
         
         # variables for image
-        self.profile_image_path = "profile_placeholder.png" 
+        self.profile_image_path = get_resource_path("profile_placeholder.png") 
         self.profile_photo_tk = None 
         
         self._set_styles()

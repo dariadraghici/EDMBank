@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk 
 import os
+from ui_utils import get_resource_path
 
 class EDMBankSettings:
     def __init__(self, parent_frame, current_user, bank_service, switch_view_callback, ui_helper):
@@ -19,7 +20,7 @@ class EDMBankSettings:
         self.card_expiry = current_user.card.expiry_date
         
         # variables for image (to maintain the profile picture on the left)
-        self.profile_image_path = "profile_placeholder.png" 
+        self.profile_image_path = get_resource_path("profile_placeholder.png") 
         self.profile_photo_tk = None 
         
         self._set_styles()

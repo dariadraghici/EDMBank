@@ -7,7 +7,7 @@ from EDMBank_contact import EDMBankContact
 import locale
 from EDMBank_profile import EDMBankProfile 
 from EDMBank_settings import EDMBankSettings 
-from ui_utils import UIHelper
+from ui_utils import UIHelper, get_resource_path
 from user_management.user import User
 from services.bank_service import BankService
 from exceptions import *
@@ -65,7 +65,7 @@ class EDMBankApp:
         self.nav_images = []  
         self.top_logo_image = None
         self.card_background_image = None
-        self.card_background_image_path = 'card.png' # Ensure this file exists
+        self.card_background_image_path = get_resource_path('card.png') # Ensure this file exists
         self.card_image_item = None # Canvas item ID for the background image
 
         self.main_container = tk.Frame(self.main, bg="#354f52")
@@ -338,7 +338,7 @@ class EDMBankApp:
         dropdown.bind("<<ComboboxSelected>>", self.handle_dropdown_selection) 
 
         try:
-            original_image = Image.open('logoo.png')
+            original_image = Image.open(get_resource_path('logoo.png'))
             target_height = self.ui.h_pct(8)
             aspect_ratio = original_image.width / original_image.height
             target_width = int(target_height * aspect_ratio)
@@ -497,11 +497,11 @@ class EDMBankApp:
         nav_frame.grid_propagate(False)
         
         nav_buttons_data = [
-            ("HOME", "./icons/icon_home.png", self.go_home),
-            ("CARD", "./icons/icon_card.png", self.show_cards),
-            ("STATISTICS", "./icons/icon_stats.png", self.show_stats),
-            ("PROFILE", "./icons/icon_profile.png", self.show_profile),
-            ("CONTACT", "./icons/icon_contact.png", self.open_chat)
+            ("HOME", get_resource_path("icons/icon_home.png"), self.go_home),
+            ("CARD", get_resource_path("icons/icon_card.png"), self.show_cards),
+            ("STATISTICS", get_resource_path("icons/icon_stats.png"), self.show_stats),
+            ("PROFILE", get_resource_path("icons/icon_profile.png"), self.show_profile),
+            ("CONTACT", get_resource_path("icons/icon_contact.png"), self.open_chat)
         ]
         
         self.nav_images = []
