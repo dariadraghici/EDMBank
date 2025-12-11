@@ -3,7 +3,7 @@ from tkinter import messagebox
 from EDMBank_register import EDMBankRegister
 from EDMBank_keyboard import AlphaNumericKeyboard
 from services.bank_service import BankService
-from ui_utils import UIHelper
+from ui_utils import UIHelper, get_resource_path
 from PIL import Image, ImageTk
 import os
 
@@ -70,8 +70,7 @@ class EDMBankLogin:
         # EDM Bank title (REPLACED WITH IMAGE LOGO)
         try:
             # Build a reliable path to the image file
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            image_path = os.path.join(script_dir, "logoo.png")
+            image_path = get_resource_path("logoo.png")
             
             # load and resize the image
             original_image = Image.open(image_path)

@@ -103,7 +103,27 @@ class BankService:
             return False
         except AccountNotFoundError:
             return True
-    
+
+    def change_password(self, user: User, old_password: str, new_password: str):
+        """
+        Changes the user's password after verifying the old one.
+        """
+        # Verify old password
+        stored_hash = user.credentials.password.encode('utf-8')
+        
+        if not bcrypt.checkpw(old_password.encode('utf-8'), stored_hash):
+             raise ValueError("Incorrect old password.")
+        
+        # Hash new password
+        salt = bcrypt.gensalt()
+        new_hashed = bcrypt.hashpw(new_password.encode('utf-8'), salt).decode('utf-8')
+        
+        # Update user object
+        user.credentials.password = new_hashed
+        
+        # Save to DB
+        self.db.modify_user(user)
+
     def add_user(self, user : User):
         """
         Adds a new user to database.
