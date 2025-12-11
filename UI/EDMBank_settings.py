@@ -16,10 +16,10 @@ class EDMBankSettings:
         
         # initial data
         # self.last_name, self.first_name = self._split_name(self.logged_in_user)
-        # Use card expiry as a real data point
+        # use card expiry as a real data point
         self.card_expiry = current_user.card.expiry_date
         
-        # variables for image (to maintain the profile picture on the left)
+        # variables for image
         self.profile_image_path = get_resource_path("profile_placeholder.png") 
         self.profile_photo_tk = None 
         
@@ -30,11 +30,11 @@ class EDMBankSettings:
 
     def _set_styles(self):
         style = ttk.Style()
-        # Reduced font sizes for better fit
+        # reduced font sizes for better fit
         style.configure('SettingsTitle.TLabel', background='#cad2c5', foreground='#354f52', font=self.ui.get_font('Tex Gyre Chorus', 14, 'bold'))
         style.configure('SettingsData.TLabel', background='#cad2c5', foreground='#2f3e46', font=self.ui.get_font('Courier', 12))
 
-        # Reduced button font size and padding
+        # reduced button font size and padding
         style.configure('Delete.TButton', foreground='white', background='#a90000', font=self.ui.get_font('Courier', 12, 'bold'), padding=self.ui.w_pct(1))
         style.map('Delete.TButton', background=[('active', '#ff6666')])
         
@@ -49,7 +49,7 @@ class EDMBankSettings:
         label = ttk.Label(parent, text=label_text, style='SettingsTitle.TLabel')
         label.grid(row=row, column=0, sticky='w', padx=self.ui.w_pct(1), pady=self.ui.h_pct(0.5))
         
-        # Added wraplength to ensure text doesn't overflow horizontally
+        # added wraplength to ensure text doesn't overflow horizontally
         info_label = ttk.Label(parent, text=info_text, style='SettingsData.TLabel', wraplength=self.ui.w_pct(40))
         info_label.grid(row=row, column=1, sticky='w', padx=self.ui.w_pct(2), pady=self.ui.h_pct(0.5))
         
@@ -81,7 +81,7 @@ class EDMBankSettings:
         main_content = tk.Frame(self.parent_frame, bg="#cad2c5", padx=self.ui.w_pct(4), pady=self.ui.h_pct(2))
         main_content.pack(fill='both', expand=True)
 
-        # Reduced title font size
+        # reduced title font size
         tk.Label(main_content, text="ACCOUNT SETTINGS", font=self.ui.get_font('Arial', 24, 'bold'),
                  bg='#cad2c5', fg='#2f3e46').pack(pady=(self.ui.h_pct(2), self.ui.h_pct(4)))
         

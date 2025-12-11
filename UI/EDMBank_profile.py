@@ -44,8 +44,6 @@ class EDMBankProfile:
 
     # ------------------------------------------------------------------------------
 
-    # ------------------------------------------------------------------------------
-
     def create_profile_view(self):
         
         for widget in self.parent_frame.winfo_children():

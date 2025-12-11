@@ -13,33 +13,29 @@ class EDMBankContact:
         self.switch_view_callback = switch_view_callback
         self.ui = ui_helper
         
-        # Initial data preparation
-        # self.last_name, self.first_name = self._split_name(self.logged_in_user)
-        
-        # Tkinter variables for user info (Read-only on this screen)
+        # tkinter variables for user info (read-only on this screen)
         self.username_var = tk.StringVar(value=self.logged_in_user)
         self.email_var = tk.StringVar(value=self.logged_in_email)
         
-        # Define the light background color consistent with the Profile view
+        # define the  background color consistent with the Profile view
         DARK_TEXT = '#2f3e46' 
         
         self.style = ttk.Style()
         
-        # Contact.TButton: Button style
+        # Contact.TButton style
         self.style.configure('Contact.TButton', 
                              foreground=DARK_TEXT,
                              font=self.ui.get_font('Helvetica', 14, 'bold'), 
                              padding=self.ui.w_pct(1))
         
-        # Contact.TLabel: Label style 
+        # Contact.TLabel style 
         self.style.configure('Contact.TLabel', 
                              background='#cad2c5', 
                              foreground=DARK_TEXT,
                              font=self.ui.get_font('Helvetica', 12))
         
-        # Active state for buttons (e.g., hover)
-        self.style.map('Contact.TButton',
-                       background=[('active', '#84a98c')])
+        # active state for buttons (e.g., hover)
+        self.style.map('Contact.TButton', background=[('active', '#84a98c')])
         
         self.create_interface()
 
@@ -49,7 +45,7 @@ class EDMBankContact:
         DARK_TEXT = '#2f3e46'
         ACCENT_COLOR = '#84a98c'
         
-        # Label (Left Column)
+        # label (left column)
         ttk.Label(parent, 
                   text=label_text, 
                   style='Contact.TLabel',
@@ -58,7 +54,7 @@ class EDMBankContact:
                   font=self.ui.get_font('Tex Gyre Chorus', 18, 'bold')
                   ).grid(row=row, column=0, padx=self.ui.w_pct(1), pady=self.ui.h_pct(0.5), sticky='w')
         
-        # Entry (Right Column - Read Only)
+        # entry (right column - read only)
         entry = tk.Entry(parent, 
                          textvariable=textvariable, 
                          font=self.ui.get_font('Courier', 14),
@@ -75,7 +71,7 @@ class EDMBankContact:
     # --------------------------------------------------------------------------
     
     def create_interface(self):
-        # Define colors locally
+        # define colors locally
         LIGHT_BG = '#cad2c5' 
         DARK_TEXT = '#2f3e46'
         ACCENT_COLOR = '#84a98c'
@@ -84,7 +80,7 @@ class EDMBankContact:
         for widget in self.parent_frame.winfo_children():
             widget.destroy()
 
-        # Main content frame - Background: #cad2c5 (light background)
+        # main content frame - Background: #cad2c5 (light background)
         self.content_frame = tk.Frame(self.parent_frame, bg=LIGHT_BG)
         self.content_frame.pack(fill='both', expand=True, padx=0, pady=0)
         
@@ -92,7 +88,7 @@ class EDMBankContact:
         self.content_frame.grid_columnconfigure(0, weight=1)
         self.content_frame.grid_rowconfigure(7, weight=1) # Row for the large Text box
 
-        # Row 0: Title Label
+        # title label
         title_label = tk.Label(self.content_frame, 
                                text="CONTACT SUPPORT",
                                font=self.ui.get_font('Arial', 28, 'bold'), 
@@ -100,7 +96,7 @@ class EDMBankContact:
                                fg=DARK_TEXT)
         title_label.grid(row=0, column=0, pady=(self.ui.h_pct(2), self.ui.h_pct(3)), sticky='ew')
 
-        # Row 1: User Details Frame (Contains Username, Email)
+        # user details frame (contains username, email)
         user_details_frame = tk.Frame(self.content_frame, bg=LIGHT_BG, padx=self.ui.w_pct(2), pady=self.ui.h_pct(1))
         user_details_frame.grid(row=1, column=0, sticky='ew')
         user_details_frame.grid_columnconfigure(1, weight=1) 
@@ -109,7 +105,7 @@ class EDMBankContact:
         self._create_read_only_field(user_details_frame, "Email:", self.email_var, 1)
 
 
-        # Row 2: Label for Problem Title
+        # label for problem title
         ttk.Label(self.content_frame, 
                   text="Problem Title:", 
                   style='Contact.TLabel',
@@ -117,7 +113,7 @@ class EDMBankContact:
                   foreground=DARK_TEXT,
                   font=self.ui.get_font('Tex Gyre Chorus', 18, 'bold')).grid(row=2, column=0, sticky='w', padx=self.ui.w_pct(2), pady=(self.ui.h_pct(1), 0))
         
-        # Row 3: Problem Title Entry (Editable)
+        # problem title entry (editable)
         self.title_entry = tk.Entry(self.content_frame,
                                     width=10,
                                     font=self.ui.get_font('Courier', 14),  
@@ -128,7 +124,7 @@ class EDMBankContact:
                                     insertbackground=DARK_TEXT)
         self.title_entry.grid(row=3, column=0, sticky='ew', padx=self.ui.w_pct(2), pady=(self.ui.h_pct(0.5), self.ui.h_pct(1)))
         
-        # Row 4: Label for Concern
+        # label for Concern
         ttk.Label(self.content_frame, 
                   text="Describe your concern:", 
                   style='Contact.TLabel',
@@ -185,7 +181,7 @@ class EDMBankContact:
             return
 
         try:
-            # Send request to bank service
+            # send request to bank service
             self.bank_service.create_support_request(self.current_user, title, concern)
 
             # confirmation message

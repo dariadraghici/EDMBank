@@ -37,10 +37,10 @@ class EDMBankApp:
         y = (screen_height - initial_height) // 2
         self.main.geometry(f"{initial_width}x{initial_height}+{x}+{y}")
         
-        # Initialize UI Helper
+        # initialize UI Helper
         self.ui = UIHelper(initial_width, initial_height)
         
-        # Store last dimensions to prevent unnecessary updates during moves
+        # store last dimensions to prevent unnecessary updates during moves
         self.last_width = initial_width
         self.last_height = initial_height
         
@@ -59,14 +59,14 @@ class EDMBankApp:
         self.card_expiry = self.current_user.card.expiry_date
         self.card_iban = self.current_user.card.IBAN
         
-        # Ensure balance is formatted correctly from the start
+        # ensure balance is formatted correctly from the start
         self.sold_amount = self.float_to_balance(float(self.current_user.balance))
         
         self.nav_images = []  
         self.top_logo_image = None
         self.card_background_image = None
-        self.card_background_image_path = get_resource_path('card.png') # Ensure this file exists
-        self.card_image_item = None # Canvas item ID for the background image
+        self.card_background_image_path = get_resource_path('card.png') # ensure this file exists
+        self.card_image_item = None # canvas item ID for the background image
 
         self.main_container = tk.Frame(self.main, bg="#354f52")
         self.main_container.pack(fill='both', expand=True, padx=10, pady=10)
@@ -80,7 +80,7 @@ class EDMBankApp:
 
         self.main.bind('<Configure>', self.on_resize)
 
-        # Setup real-time listener
+        # setup real-time listener
         self.setup_realtime_listener()
 
     
@@ -89,40 +89,40 @@ class EDMBankApp:
             for doc in doc_snapshot:
                 if doc.exists:
                     data = doc.to_dict()
-                    # Schedule UI update on main thread
+                    # schedule UI update on main thread
                     self.main.after(0, self.handle_user_update, data)
 
-        # Keep a reference to the listener
+        # keep a reference to the listener
         self.user_listener = self.bank_service.listen_to_user_changes(self.logged_in_user, on_snapshot)
 
     def handle_user_update(self, data):
-        # Update balance
+        # update balance
         if "Sold" in data:
             new_balance = data.get("Sold")
             self.current_user.balance = new_balance
             self.sold_amount = self.float_to_balance(float(new_balance))
             self.update_balance_display()
 
-        # Update History and Notify
+        # update history and notify
         if "History" in data:
             new_history_strings = data.get("History")
-            # Convert to object to update local state
+            # convert to object to update local state
             new_history_obj = self.bank_service.db.database_to_class_format(new_history_strings)
             
-            # Check if we have a new transaction
+            # check if we have a new transaction
             old_len = len(self.current_user.payment_history.history)
             new_len = len(new_history_obj.history)
             
             if new_len > old_len:
-                # Get the last payment
+                # get the last payment
                 last_payment = new_history_obj.history[-1]
-                # Check if I am the receiver
+                # check if I am the receiver
                 if last_payment.receiver == self.logged_in_user:
                      self.show_message("Money Received!", 
                                        f"You received {self.float_to_balance(last_payment.amount)} from {last_payment.sender}!", 
                                        "info")
             
-            # Update local user history
+            # update local user history
             self.current_user.payment_history = new_history_obj
 
     def show_message(self, title, message, message_type="info"):
@@ -144,18 +144,18 @@ class EDMBankApp:
 
     
     def on_resize(self, event):
-        # Only handle the main window event
+        # only handle the main window event
         if str(event.widget) != '.':
             return
 
         window_width = self.main.winfo_width()
         window_height = self.main.winfo_height()
         
-        # Check if dimensions actually changed
+        # check if dimensions actually changed
         if window_width == self.last_width and window_height == self.last_height:
             return
             
-        # Update stored dimensions
+        # update stored dimensions
         self.last_width = window_width
         self.last_height = window_height
         
@@ -164,7 +164,7 @@ class EDMBankApp:
         try:
             self.ui.update_dimensions(window_width, window_height)
             
-            # Check if widgets exist before trying to manipulate them
+            # check if widgets exist before trying to manipulate them
             if hasattr(self, 'buttons_frame') and self.buttons_frame.winfo_exists():
                 if hasattr(self, 'card_frame') and self.card_frame.winfo_exists():
                     if window_width > 600 and not self.is_large_screen:
@@ -174,13 +174,13 @@ class EDMBankApp:
                         self.switch_to_mobile_layout()
                         self.is_large_screen = False
                     else:
-                        # Force update of layout even if mode didn't change, to apply new dimensions
+                        # force update of layout even if mode didn't change, to apply new dimensions
                         if self.is_large_screen:
                             self.switch_to_desktop_layout()
                         else:
                             self.switch_to_mobile_layout()
         except tk.TclError:
-            pass # Ignore errors if widgets are destroyed during resize
+            pass # ignore errors if widgets are destroyed during resize
         finally:
              self.main.bind('<Configure>', self.on_resize)
 
@@ -203,7 +203,7 @@ class EDMBankApp:
                 self.card_background_image = ImageTk.PhotoImage(resized_card_image)
 
                 if self.card_image_item is None:
-                    # Create the image item at the bottom of the stack (0,0)
+                    # create the image item at the bottom of the stack (0,0)
                     self.card_image_item = self.card_frame.create_image(0, 0, image=self.card_background_image, anchor='nw')
                     self.card_frame.tag_lower(self.card_image_item) 
                 else:
@@ -211,7 +211,7 @@ class EDMBankApp:
                 
                 padding = self.ui.w_pct(2)
                 
-                # Move text items to new coordinates
+                # move text items to new coordinates
                 self.card_frame.coords(self.text_bank, padding, padding)
                 self.card_frame.coords(self.text_chip, card_width - padding, padding)
                 self.card_frame.coords(self.text_number, card_width // 2, card_height // 2)
@@ -365,7 +365,7 @@ class EDMBankApp:
         elif selected == "Savings":
             self.show_message("Savings", "Manage your savings accounts", "info")
         elif selected == "Settings":
-            self.settings() # Calls the updated settings method
+            self.settings() # calls the updated settings method
         elif selected == "Cards":
             self.show_cards()
         elif selected == "Payments":
@@ -392,7 +392,7 @@ class EDMBankApp:
         
         self.create_card(self.content_frame)
 
-        # Display balance directly without button
+        # display balance directly without button
         self.sold_label = tk.Label(self.content_frame, text=self.sold_amount,
                                      font=self.ui.get_font('Arial', 20, 'bold'), bg='#cad2c5', fg='#2f3e46')
         self.sold_label.grid(row=1, column=0, pady=self.ui.h_pct(1))
@@ -642,11 +642,11 @@ class EDMBankApp:
         tk.Label(history_window, text="Recent Transactions", font=('Tex Gyre Chorus', 20, 'bold'),
                  bg="#c6cec1", fg="#486e72").pack(pady=15)
 
-        # Frame for Treeview
+        # frame for Treeview
         tree_frame = tk.Frame(history_window, bg='#cad2c5')
         tree_frame.pack(fill='both', expand=True, padx=20, pady=10)
 
-        # Scrollbar
+        # scrollbar
         scrollbar = ttk.Scrollbar(tree_frame)
         scrollbar.pack(side='right', fill='y')
 
@@ -655,7 +655,7 @@ class EDMBankApp:
         tree = ttk.Treeview(tree_frame, columns=columns, show='headings', 
                             yscrollcommand=scrollbar.set, height=10)
         
-        # Configure columns
+        # configure columns
         tree.heading("type", text="Type")
         tree.heading("details", text="Details")
         tree.heading("amount", text="Amount")
@@ -667,17 +667,17 @@ class EDMBankApp:
         scrollbar.config(command=tree.yview)
         tree.pack(side='left', fill='both', expand=True)
 
-        # Style for rows
-        tree.tag_configure('sent', foreground='#d62828') # Red for sent
-        tree.tag_configure('received', foreground='#2a9d8f') # Green for received
+        # style for rows
+        tree.tag_configure('sent', foreground='#d62828') # red for sent
+        tree.tag_configure('received', foreground='#2a9d8f') # green for received
 
-        # Populate
+        # populate data
         history = self.current_user.payment_history.history
         
         if not history:
             tree.insert("", "end", values=("No transactions", "-", "-"))
         else:
-            # Show newest first
+            # show newest first
             for payment in reversed(history):
                 amount_val = payment.amount
                 amount_str = self.float_to_balance(amount_val)
@@ -695,7 +695,7 @@ class EDMBankApp:
                 
                 tree.insert("", "end", values=(trans_type, details, display_amount), tags=(tag,))
 
-        # Close button
+        # close button
         tk.Button(history_window, text="CLOSE", font=('Arial', 12, 'bold'),
                   bg='#354f52', fg='white', command=history_window.destroy, width=15).pack(pady=20)
 
@@ -737,7 +737,7 @@ class EDMBankApp:
         details_frame.grid_columnconfigure(0, weight=1)
         details_frame.grid_columnconfigure(1, weight=1)
 
-        # Expiry date
+        # expiry date
         expiry_frame = tk.Frame(details_frame, bg='#cad2c5')
         expiry_frame.grid(row=0, column=0, sticky='ew', padx=(0, 10))
         tk.Label(expiry_frame, text="EXPIRY (MM/YY):", font=('Tex Gyre Chorus', 16, 'bold'),
@@ -776,10 +776,10 @@ class EDMBankApp:
                     self.show_message("Error", "Deposit amount must be positive.", "error")
                     return
                 
-                # Perform deposit
+                # perform deposit
                 self.bank_service.add_money(self.current_user, transfer_amount, holder)
                 
-                # Update UI
+                # update UI
                 self.sold_amount = self.float_to_balance(self.current_user.balance)
                 self.update_balance_display()
                 
@@ -821,7 +821,7 @@ class EDMBankApp:
         self.show_message("Statistics", "Spending statistics", "info")
     
     def show_profile(self):
-        # MODIFIED: Navigate to the profile page
+        # navigate to the profile page
         self.switch_view("profile")
         
     def balance_to_float(self, balance_str):
@@ -835,19 +835,18 @@ class EDMBankApp:
     def float_to_balance(self, amount_float):
         """Converts a float to a balance string (e.g., '1.250,00 RON')."""
         
-        # Set locale for correct number formatting (assuming Romanian/European standard for the format)
+        # set locale for correct number formatting (Romanian/European)
         try:
-            # Try to set Romanian locale for correct format
+            # try to set Romanian locale for correct format
             locale.setlocale(locale.LC_ALL, 'ro_RO.UTF-8')
         except locale.Error:
-            # Fallback for systems where 'ro_RO.UTF-8' is not available
+            # fallback for systems where 'ro_RO.UTF-8' is not available
             try:
                 locale.setlocale(locale.LC_ALL, 'C')
             except locale.Error:
                 pass
                 
-        # Manual format fallback (thousands dot, decimal comma):
-        # Format to two decimal places, then handle custom separators
+        # manual format fallback (thousands dot, decimal comma) format to two decimal places, then handle custom separators
         formatted = "{:,.2f}".format(amount_float).replace(",", "X").replace(".", ",").replace("X", ".")
         return f"{formatted} RON"
 
@@ -857,7 +856,7 @@ class EDMBankApp:
             try:
                 self.sold_label.config(text=self.sold_amount)
             except tk.TclError:
-                pass # Widget destroyed (user likely navigated away from home)
+                pass # widget destroyed (user likely navigated away from home)
     
     def show_transfer_popup(self):
         transfer_window = tk.Toplevel(self.main)
@@ -870,23 +869,23 @@ class EDMBankApp:
         
         transfer_window.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
         transfer_window.resizable(False, False)
-        transfer_window.grab_set() # Modal window: forces focus on this window
+        transfer_window.grab_set() # modal window forces focus on this window
         
-        # --- Recipient Username Input ---
+        # recipient username input
         tk.Label(transfer_window, text="Recipient Username:", font=('Tex Gyre Chorus', 20, 'bold'),
                  bg='#cad2c5', fg='#354f52').pack(pady=(15, 2), padx=10, anchor='w')
         
         username_entry = tk.Entry(transfer_window, font=('Arial', 12), relief='flat', bd=2, bg='white')
         username_entry.pack(pady=(0, 10), padx=20, fill='x')
         
-        # --- Transfer Sum Input ---
+        # transfer sum input
         tk.Label(transfer_window, text="Sum you want to transfer:", font=('Tex Gyre Chorus', 20, 'bold'),
                  bg='#cad2c5', fg='#354f52').pack(pady=(5, 2), padx=10, anchor='w')
         
         sum_entry = tk.Entry(transfer_window, font=('Arial', 12), relief='flat', bd=2, bg='white')
         sum_entry.pack(pady=(0, 15), padx=20, fill='x')
         
-        # --- Button Frame ---
+        # button frame
         button_frame = tk.Frame(transfer_window, bg='#cad2c5')
         button_frame.pack(pady=10)
         
@@ -907,7 +906,7 @@ class EDMBankApp:
                 self.bank_service.transfer_money(self.current_user.credentials.username, receiver, transfer_amount)
                 self.current_user = self.bank_service.refresh_user(self.current_user)
 
-                # Update UI
+                # update UI
                 self.sold_amount = self.float_to_balance(self.current_user.balance)
                 self.update_balance_display()
                 
@@ -954,23 +953,23 @@ class EDMBankApp:
         
         transfer_window.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
         transfer_window.resizable(False, False)
-        transfer_window.grab_set() # Modal window: forces focus on this window
+        transfer_window.grab_set() # modal window forces focus on this window
         
-        # --- Recipient IBAN Input ---
+        # recipient IBAN input
         tk.Label(transfer_window, text="Recipient IBAN (RO...):", font=('Tex Gyre Chorus', 20, 'bold'),
                  bg='#cad2c5', fg='#354f52').pack(pady=(15, 2), padx=10, anchor='w')
         
         iban_entry = tk.Entry(transfer_window, font=('Arial', 12), relief='flat', bd=2, bg='white')
         iban_entry.pack(pady=(0, 10), padx=20, fill='x')
         
-        # --- Transfer Sum Input ---
+        # transfer sum input
         tk.Label(transfer_window, text="Sum you want to transfer:", font=('Tex Gyre Chorus', 20, 'bold'),
                  bg='#cad2c5', fg='#354f52').pack(pady=(5, 2), padx=10, anchor='w')
         
         sum_entry = tk.Entry(transfer_window, font=('Arial', 12), relief='flat', bd=2, bg='white')
         sum_entry.pack(pady=(0, 15), padx=20, fill='x')
         
-        # --- Button Frame ---
+        # button frame
         button_frame = tk.Frame(transfer_window, bg='#cad2c5')
         button_frame.pack(pady=10)
         
@@ -993,10 +992,10 @@ class EDMBankApp:
                     self.show_message("Error", "Transfer amount must be positive.", "error")
                     return
                 
-                # Perform IBAN transfer
+                # perform IBAN transfer
                 self.bank_service.transfer_iban(self.current_user, iban, transfer_amount)
                 
-                # Update UI
+                # update UI
                 self.sold_amount = self.float_to_balance(self.current_user.balance)
                 self.update_balance_display()
 

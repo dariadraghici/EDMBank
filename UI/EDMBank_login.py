@@ -22,7 +22,7 @@ class EDMBankLogin:
         max_width = min(990, screen_width)
         max_height = min(1760, screen_height - 100)
 
-        # Calculate proportional size maintaining 9:16 aspect ratio
+        # calculate proportional size maintaining 9:16 aspect ratio
         if max_width / max_height > 9/16:
             initial_width = int(max_height * 9/16)
             initial_height = max_height
@@ -30,7 +30,7 @@ class EDMBankLogin:
             initial_width = max_width
             initial_height = int(max_width * 16/9)
             
-        # Center the window
+        # center the window
         x = (screen_width - initial_width) // 2
         y = (screen_height - initial_height) // 2
         self.main.geometry(f"{initial_width}x{initial_height}+{x}+{y}")
@@ -42,14 +42,14 @@ class EDMBankLogin:
         # password and field state
         self.active_field = 'username'
         
-        # Store a reference to the image to prevent it from being garbage collected
+        # store a reference to the image to prevent it from being garbage collected
         self.logo_image = None 
 
         # main container
         self.main_container = tk.Frame(self.main, bg="#354f52")
         self.main_container.pack(fill='both', expand=True, padx=20, pady=20)
         
-        # Keypad container (will hold either numeric or alphanumeric keyboard)
+        # keypad container (will hold either numeric or alphanumeric keyboard)
         self.keyboard_container = tk.Frame(self.main_container, bg="#354f52")
         
         self.alphanum_frame = tk.Frame(self.keyboard_container, bg="#354f52")
@@ -69,7 +69,7 @@ class EDMBankLogin:
     def create_login_interface(self):
         # EDM Bank title (REPLACED WITH IMAGE LOGO)
         try:
-            # Build a reliable path to the image file
+            # build a reliable path to the image file
             image_path = get_resource_path("logoo.png")
             
             # load and resize the image
@@ -97,7 +97,7 @@ class EDMBankLogin:
             logo_label.pack(pady=(self.ui.h_pct(5), self.ui.h_pct(3)))
             messagebox.showwarning("Warning", "Logo image 'logoo.png' not found. Using text fallback.", parent=self.main)
         except Exception as e:
-            # fallback for other errors (e.g., PIL not installed)
+            # fallback for other errors (PIL not installed etc)
             logo_label = tk.Label(self.main_container, text="EDM Bank", 
                                  font=self.ui.get_font('Arial', 40, 'bold'), bg="#354f52", fg="white")
             logo_label.pack(pady=(self.ui.h_pct(5), self.ui.h_pct(3)))

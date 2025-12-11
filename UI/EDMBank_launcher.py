@@ -3,7 +3,7 @@ import os
 import tkinter as tk
 from tkinter import TclError
 
-# Add the project's root directory to the Python path
+# add the project's root directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from EDMBank_login import EDMBankLogin
@@ -29,10 +29,10 @@ def restart_app(current_root, bank_service):
     width = current_root.winfo_width()
     height = current_root.winfo_height()
     
-    # Destroy the current window
+    # destroy the current window
     current_root.destroy()
     
-    # Create a new root for the login app
+    # create a new root for the login app
     new_root = tk.Tk()
     
     apply_dpi_fix(new_root)
@@ -62,10 +62,10 @@ def start_main_app(user, login_window, bank_service: BankService):
     main_root.geometry(f"{width}x{height}+{x}+{y}")
     main_root.minsize(300, 500)
     
-    # start the main app, passing the restart_app function as the logout callback
+    # start the main app by passing the restart_app function as the logout callback
     app = EDMBankApp(main_root, current_user=user, bank_service=bank_service, relauch_login_callback=lambda: restart_app(main_root, bank_service))
     
-    # update the card display for the logged in user
+    # update the card display for logged in user
     app.update_card_display()
     main_root.mainloop()
 

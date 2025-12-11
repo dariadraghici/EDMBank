@@ -13,11 +13,11 @@ class EDMBankRegister:
         self.main = main
         self.main.title("EDM Bank - Register")
         self.login_window = login_window 
-        self.on_success_callback = on_success_callback # Store the success callback
+        self.on_success_callback = on_success_callback # store the success callback
         self.bank_service = bank_service
         
-        # Initialize UI Helper
-        self.main.update_idletasks() # Ensure geometry is applied
+        # initialize UI Helper
+        self.main.update_idletasks() # ensure geometry is applied
         self.ui = UIHelper(self.main.winfo_width(), self.main.winfo_height())
 
         # variables for password management
@@ -27,10 +27,10 @@ class EDMBankRegister:
         self.main_container = tk.Frame(self.main, bg="#354f52")
         self.main_container.pack(fill='both', expand=True, padx=20, pady=20)
         
-        # Keypad container (will hold either numeric or alphanumeric keyboard)
+        # keypad container (will hold either numeric or alphanumeric keyboard)
         self.keyboard_container = tk.Frame(self.main_container, bg="#354f52")
         
-        # Separate frames for each keyboard type
+        # separate frames for each keyboard type
         self.alphanum_frame = tk.Frame(self.keyboard_container, bg="#354f52")
         
         self.create_register_interface()
@@ -49,7 +49,7 @@ class EDMBankRegister:
         entry = tk.Entry(frame, font=self.ui.get_font('Courier', 16), 
                          bg='#2f3e46', fg='white', relief='flat')
         entry.pack(fill='x', pady=(self.ui.h_pct(0.2), 0), ipady=self.ui.h_pct(0.5))
-        # Bind FocusIn to set active field and show alphanumeric keyboard
+        # bind FocusIn to set active field and show alphanumeric keyboard
         entry.bind("<FocusIn>", lambda e, name=field_name: self.set_active_field(name))
         return entry
     
@@ -68,7 +68,7 @@ class EDMBankRegister:
                          bg='#2f3e46', fg='white', relief='flat', show="*")
         entry.pack(fill='x', pady=(self.ui.h_pct(0.2), self.ui.h_pct(0.5)), ipady=self.ui.h_pct(0.5))
         
-        # Bind FocusIn to select this field and show the alphanumeric keyboard
+        # bind FocusIn to select this field and show the alphanumeric keyboard
         entry.bind("<FocusIn>", lambda e, name=field_name: self.set_active_field(name))
         entry.bind("<Return>", lambda e: self.attempt_register())
         return entry, container
@@ -125,10 +125,10 @@ class EDMBankRegister:
                              relief='flat', command=self.back_to_login)
         back_btn.pack(pady=(self.ui.h_pct(1), self.ui.h_pct(1)))
         
-        # Pack the main keyboard container at the bottom
+        # pack the main keyboard container at the bottom
         self.keyboard_container.pack(fill='both', expand=True, padx=self.ui.w_pct(5))
         
-        # Set initial focus to username and show alphanumeric keyboard
+        # set initial focus to username and show alphanumeric keyboard
         self.username_entry.focus_set()
         self.set_active_field('username') 
         
@@ -146,7 +146,7 @@ class EDMBankRegister:
             self.password_entry.config(relief='flat')
             self.confirm_password_entry.config(relief='flat')
         
-        # Reset visual state of entry fields
+        # reset visual state of entry fields
         self.username_entry.config(relief='flat')
         self.email_entry.config(relief='flat')
         
@@ -209,8 +209,7 @@ class EDMBankRegister:
         user = User(credentials, 0, pay_history, user_card)
         self.bank_service.add_user(user)
         
-        # Refresh user from DB to ensure we have the hashed password
-        # This prevents overwriting the hash with plain text if modify_user is called later
+        # refresh user from DB to ensure we have the hashed password
         user = self.bank_service.get_user(username)
 
         messagebox.showinfo("Registration Successful", 
