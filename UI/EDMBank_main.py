@@ -521,7 +521,7 @@ class EDMBankApp:
                                       bg="#84a98c", fg="#323A87", cursor='hand2')
             icon_label.pack(pady=(self.ui.h_pct(0.5), 0))
 
-            text_label = tk.Label(btn_frame, text=text, font=('Courier', 10, 'bold'),
+            text_label = tk.Label(btn_frame, text=text, font=('Courier', 20, 'bold'),
                                      bg="#354f52", fg='#ffffff', cursor='hand2')
             text_label.pack(pady=(0, self.ui.h_pct(0.5)))
             
@@ -631,15 +631,16 @@ class EDMBankApp:
         history_window.title("Transaction History")
         history_window.configure(bg='#cad2c5')
         
-        popup_width = 600
-        popup_height = 500
+        popup_width = 650
+        popup_height = 550
         
         x, y = self.get_center_coordinates(popup_width, popup_height)
         
         history_window.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
         history_window.grab_set()
         
-        tk.Label(history_window, text="Recent Transactions", font=('Tex Gyre Chorus', 20, 'bold'),
+        # title label
+        tk.Label(history_window, text="Recent Transactions", font=('Tex Gyre Chorus', 28, 'bold'),
                  bg="#c6cec1", fg="#486e72").pack(pady=15)
 
         # frame for Treeview
@@ -650,19 +651,22 @@ class EDMBankApp:
         scrollbar = ttk.Scrollbar(tree_frame)
         scrollbar.pack(side='right', fill='y')
 
+        style = ttk.Style()
+        style.configure("Treeview.Heading", font=('Arial', 20, 'bold'))
+        style.configure("Treeview", font=('Arial', 16), rowheight=30)
+
         # Treeview
         columns = ("type", "details", "amount")
         tree = ttk.Treeview(tree_frame, columns=columns, show='headings', 
                             yscrollcommand=scrollbar.set, height=10)
         
-        # configure columns
         tree.heading("type", text="Type")
         tree.heading("details", text="Details")
         tree.heading("amount", text="Amount")
         
-        tree.column("type", width=100, anchor='center')
-        tree.column("details", width=250, anchor='w')
-        tree.column("amount", width=150, anchor='e')
+        tree.column("type", width=120, anchor='center')
+        tree.column("details", width=300, anchor='center')
+        tree.column("amount", width=180, anchor='center')
         
         scrollbar.config(command=tree.yview)
         tree.pack(side='left', fill='both', expand=True)
@@ -696,7 +700,7 @@ class EDMBankApp:
                 tree.insert("", "end", values=(trans_type, details, display_amount), tags=(tag,))
 
         # close button
-        tk.Button(history_window, text="CLOSE", font=('Arial', 12, 'bold'),
+        tk.Button(history_window, text="CLOSE", font=('Arial', 14, 'bold'),
                   bg='#354f52', fg='white', command=history_window.destroy, width=15).pack(pady=20)
 
     def add_money(self):
